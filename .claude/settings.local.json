@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(dotnet test:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/sandr/Documents/Projects/AIEnterprisePatterns -name *.spec.ts -o -name *.spec.js)"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      // TODO: Set to your project name (lowercase, no spaces, ≤12 chars, e.g. "myapp")
+      // This prefix appears in all Azure resource names.
+      "value": "TODO_PROJECT_NAME"
+    },
+    "location": {
+      // TODO: Change if deploying to a different region (centralus, eastus, eastus2, westus2)
+      "value": "centralus"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "sqlAdminPassword": {
+      // TODO: Reference your Key Vault — replace __SUBSCRIPTION_ID__ and the vault name
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/__SUBSCRIPTION_ID__/resourceGroups/rg-TODO_PROJECT_NAME-prod/providers/Microsoft.KeyVault/vaults/kv-TODO_PROJECT_NAME-XXXXXXXX"
+        },
+        "secretName": "sql-admin-password"
+      }
+    },
+    "mysqlAdminPassword": {
+      // TODO: Same Key Vault reference as above
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/__SUBSCRIPTION_ID__/resourceGroups/rg-TODO_PROJECT_NAME-prod/providers/Microsoft.KeyVault/vaults/kv-TODO_PROJECT_NAME-XXXXXXXX"
+        },
+        "secretName": "mysql-admin-password"
+      }
+    },
+    "alertEmail": {
+      // TODO: Set to your ops/DevOps email address (or leave empty to disable email alerts)
+      "value": "TODO_ALERT_EMAIL"
+    },
+    "apiBaseUrl": {
+      // TODO: Set to https://<api-container-app-fqdn>/api after first deploy
+      // Leave empty on first deploy — set after the API Container App is created.
+      "value": ""
+    },
+    "authEntraIssuer": {
+      // TODO: Set to your OIDC issuer URL.
+      // Azure Entra External ID: https://<tenant>.ciamlogin.com/<tenant>.onmicrosoft.com/v2.0
+      // Auth0: https://<domain>.auth0.com/
+      // See deployment/AUTH_SETUP_GUIDE.md for full instructions.
+      "value": ""
+    },
+    "authEntraClientId": {
+      // TODO: Set to your OIDC frontend client ID
+      "value": ""
+    },
+    "authApiScopeRead": {
+      // TODO: Set to your API read scope (e.g. api://<api-client-id>/articles.read)
+      "value": ""
+    },
+    "authApiScopeWrite": {
+      // TODO: Set to your API write scope (e.g. api://<api-client-id>/articles.write)
+      "value": ""
+    },
+    "strapiUrl": {
+      // TODO: Set to https://<cms-container-app-fqdn> after first CMS deploy
+      // Leave empty on first deploy.
+      "value": ""
+    }
+  }
+}

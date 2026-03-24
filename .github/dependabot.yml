@@ -1,0 +1,109 @@
+version: 2
+updates:
+  # Frontend npm (root)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      storybook:
+        patterns:
+          - "storybook"
+          - "@storybook/*"
+      testing:
+        patterns:
+          - "jest"
+          - "jest-environment-jsdom"
+          - "@types/jest"
+          - "@testing-library/*"
+          - "jest-axe"
+          - "@types/jest-axe"
+          - "@playwright/test"
+      types:
+        patterns:
+          - "@types/node"
+          - "@types/react"
+          - "@types/react-dom"
+    ignore:
+      # tailwindcss v4 is a breaking rewrite — defer to Phase 8
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      # eslint v10 has breaking plugin changes — defer to Phase 8
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # next-auth v5 is intentionally on beta — don't auto-bump to v4 stable
+      - dependency-name: "next-auth"
+        update-types: ["version-update:semver-major"]
+
+  # CMS npm (cms/)
+  - package-ecosystem: "npm"
+    directory: "/cms"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      strapi:
+        patterns:
+          - "@strapi/*"
+          - "strapi"
+    ignore:
+      # Strapi controls its React version — don't auto-bump
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # Strapi controls react-router-dom — don't auto-bump
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
+
+  # .NET NuGet (backend/)
+  - package-ecosystem: "nuget"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      dotnet-servicing:
+        patterns:
+          - "Microsoft.*"
+      ef-core:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+      test-infrastructure:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+          - "Moq"
+    ignore:
+      - dependency-name: "Microsoft.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "coverlet.*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+
+  # Docker — frontend
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # Docker — backend
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+
+  # Docker — CMS
+  - package-ecosystem: "docker"
+    directory: "/cms"
+    schedule:
+      interval: "monthly"

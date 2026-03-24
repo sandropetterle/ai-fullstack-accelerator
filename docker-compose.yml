@@ -1,0 +1,76 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: accelerator-sqlserver
+    mem_limit: 1g
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQL_SA_PASSWORD:-YourStrong@Passw0rd}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  # ── CMS: MySQL + Strapi ─────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: accelerator-mysql
+    mem_limit: 512m
+    command: --innodb-buffer-pool-size=64M --innodb-log-file-size=16M --max-connections=20
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-strapiPassword123}
+      MYSQL_DATABASE: strapi_cms
+      MYSQL_USER: strapi
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-strapiPassword123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "strapi", "--password=${MYSQL_PASSWORD:-strapiPassword123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - cms
+
+  strapi:
+    build:
+      context: ./cms
+      dockerfile: Dockerfile
+      target: dev
+    container_name: accelerator-strapi
+    mem_limit: 512m
+    environment:
+      DATABASE_CLIENT: mysql
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_NAME: strapi_cms
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD:-strapiPassword123}
+      DATABASE_SSL: "false"
+      APP_KEYS: ${STRAPI_APP_KEYS:-localDevKey1,localDevKey2}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT:-localDevApiTokenSalt}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET:-localDevAdminJwtSecret}
+      TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT:-localDevTransferTokenSalt}
+      JWT_SECRET: ${STRAPI_JWT_SECRET:-localDevJwtSecret}
+      NODE_ENV: development
+      NODE_OPTIONS: "--max-old-space-size=384"
+    ports:
+      - "1337:1337"
+    volumes:
+      - ./cms:/app
+      - /app/node_modules
+      - strapi-uploads:/app/public/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["npm", "run", "develop"]
+    profiles:
+      - cms
+
+volumes:
+  sqlserver-data:
+  mysql-data:
+  strapi-uploads:
