@@ -4,7 +4,7 @@
 # ============================================================================
 
 # Stage 1: Dependencies
-FROM node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa AS deps
+FROM node:25-alpine@sha256:5209bcaca9836eb3448b650396213dbe9d9a34d31840c2ae1f206cb2986a8543 AS deps
 WORKDIR /app
 
 # Copy package files
@@ -14,7 +14,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Stage 2: Builder
-FROM node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa AS builder
+FROM node:25-alpine@sha256:5209bcaca9836eb3448b650396213dbe9d9a34d31840c2ae1f206cb2986a8543 AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -40,7 +40,7 @@ ENV AUTH_SECRET=$AUTH_SECRET
 RUN npm run build
 
 # Stage 3: Runner
-FROM node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa AS runner
+FROM node:25-alpine@sha256:5209bcaca9836eb3448b650396213dbe9d9a34d31840c2ae1f206cb2986a8543 AS runner
 WORKDIR /app
 
 # Create non-root user
