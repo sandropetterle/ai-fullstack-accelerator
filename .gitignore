@@ -22,6 +22,10 @@
 # misc
 .DS_Store
 *.pem
+*.pfx
+*.p12
+*.key
+*.jks
 
 # debug
 npm-debug.log*
@@ -31,6 +35,17 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+**/.env
+**/.env.*.local
+
+# .NET secrets / per-env config (do not commit real values)
+**/secrets.json
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Local.json
+
+# Claude Code per-developer local state
+.claude/settings.local.json
 
 # vercel
 .vercel
