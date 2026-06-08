@@ -143,7 +143,7 @@ test.describe('Browse Articles Page', () => {
 
   test('tag checkbox toggles a tags parameter in the URL', async ({ page }) => {
     // Tags are rendered as labelled checkboxes: <Checkbox id="tag-{tag}"> + <label>
-    const cleanArchCheckbox = page.getByRole('checkbox', { name: 'Clean Architecture' })
+    const cleanArchCheckbox = page.getByRole('checkbox', { name: 'Architecture' })
 
     await expect(cleanArchCheckbox).toBeVisible({ timeout: 5_000 })
     await cleanArchCheckbox.click()
@@ -159,7 +159,7 @@ test.describe('Browse Articles Page', () => {
 
 test.describe('Article Detail Page', () => {
   test('loads the seeded article by slug and shows correct heading', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     const heading = page.getByRole('heading', { level: 1 })
@@ -168,7 +168,7 @@ test.describe('Article Detail Page', () => {
   })
 
   test('shows the voting button in an enabled state', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     // VotingButton renders: <Button>…{voteCount} <span>votes</span></Button>
@@ -199,7 +199,7 @@ test.describe('Article Detail Page', () => {
       }
     })
 
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     const voteButton = page.getByRole('button', { name: /votes/i })
@@ -235,7 +235,7 @@ test.describe('Article Detail Page', () => {
       }
     })
 
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     const voteButton = page.getByRole('button', { name: /votes/i })
@@ -249,7 +249,7 @@ test.describe('Article Detail Page', () => {
   })
 
   test('breadcrumb contains links back to Home and Articles', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     // Breadcrumb renders as <nav> + <ol>
@@ -371,16 +371,16 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
       page.getByRole('heading', { name: 'Filters' })
     ).toBeVisible({ timeout: 10_000 })
 
-    // Select first tag (Clean Architecture)
-    const firstTag = page.getByRole('checkbox', { name: 'Clean Architecture' })
+    // Select first tag (Architecture)
+    const firstTag = page.getByRole('checkbox', { name: 'Architecture' })
     await expect(firstTag).toBeVisible({ timeout: 5_000 })
     await firstTag.click()
     // Use toHaveURL (assertion-based polling) instead of waitForURL (navigation event)
     // — more reliable with Next.js pushState soft-navigation across all browsers
     await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
 
-    // Select a second tag (CQRS) — toggles comma-separated tags list
-    const secondTag = page.getByRole('checkbox', { name: 'CQRS' })
+    // Select a second tag (Security) — toggles comma-separated tags list
+    const secondTag = page.getByRole('checkbox', { name: 'Security' })
     await expect(secondTag).toBeVisible({ timeout: 5_000 })
     await secondTag.click()
     // Wait for URL to reflect both tags before checking toggle
@@ -404,12 +404,12 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
     ).toBeVisible({ timeout: 10_000 })
 
     // Pre-select two tags then switch to All mode
-    const firstTag = page.getByRole('checkbox', { name: 'Clean Architecture' })
+    const firstTag = page.getByRole('checkbox', { name: 'Architecture' })
     await expect(firstTag).toBeVisible({ timeout: 5_000 })
     await firstTag.click()
     await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
 
-    const secondTag = page.getByRole('checkbox', { name: 'CQRS' })
+    const secondTag = page.getByRole('checkbox', { name: 'Security' })
     await expect(secondTag).toBeVisible({ timeout: 5_000 })
     await secondTag.click()
     await expect(page).toHaveURL(/tags=[^&]*(%2C|,)/i, { timeout: 10_000 })
@@ -432,7 +432,7 @@ test.describe('Recently Viewed Articles', () => {
     page,
   }) => {
     // Visit the article detail page — RecentlyViewedTracker records it in localStorage.
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     // Navigate to the articles listing.
@@ -454,7 +454,7 @@ test.describe('Recently Viewed Articles', () => {
   test('Clear recently viewed button removes entries and hides the sidebar section', async ({
     page,
   }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
 
     await page.goto('/articles')
@@ -567,7 +567,7 @@ test.describe('Page Titles', () => {
   })
 
   test('article detail title includes the article name', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveTitle(/Clean Architecture/i)
   })

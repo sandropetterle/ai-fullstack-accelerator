@@ -66,7 +66,7 @@ test.describe('Unauthenticated access guards', () => {
   })
 
   test('/articles/[slug]/edit redirects to /login when not signed in', async ({ page }) => {
-    await page.goto('/articles/cqrs-pattern-implementation/edit')
+    await page.goto('/articles/building-restful-apis-aspnet-core/edit')
     await page.waitForURL(/\/login/, { timeout: 10_000 })
     await expect(
       page.getByRole('button', { name: /Continue with Microsoft/i })
@@ -74,7 +74,7 @@ test.describe('Unauthenticated access guards', () => {
   })
 
   test('Edit and Delete buttons are not shown to unauthenticated users', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
     // ArticleActions returns null when session is absent or lacks Editor role
     await expect(page.getByRole('link', { name: 'Edit', exact: true })).not.toBeVisible()
@@ -117,7 +117,7 @@ test.describe('Authenticated — UI', () => {
   })
 
   test('Edit button is visible on article detail page', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
     await expect(
       page.getByRole('link', { name: 'Edit', exact: true })
@@ -125,7 +125,7 @@ test.describe('Authenticated — UI', () => {
   })
 
   test('Delete button is visible on article detail page', async ({ page }) => {
-    await page.goto('/articles/clean-architecture-ai-refactoring')
+    await page.goto('/articles/getting-started-clean-architecture')
     await page.waitForLoadState('networkidle')
     await expect(
       page.getByRole('button', { name: 'Delete', exact: true })
@@ -162,7 +162,7 @@ test.describe('Authenticated — API writes', () => {
   })
 
   test('can edit an existing article and save changes', async ({ page }) => {
-    await page.goto('/articles/repository-pattern-ef-core/edit')
+    await page.goto('/articles/building-restful-apis-aspnet-core/edit')
     await expect(
       page.locator('[aria-label="Edit article form"]')
     ).toBeVisible({ timeout: 10_000 })
@@ -172,8 +172,8 @@ test.describe('Authenticated — API writes', () => {
     await page.getByRole('button', { name: /Save Changes/i }).click()
 
     // Successful edit redirects to the article detail page
-    await page.waitForURL(/\/articles\/repository-pattern-ef-core$/, { timeout: 20_000 })
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Repository Pattern')
+    await page.waitForURL(/\/articles\/building-restful-apis-aspnet-core$/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('RESTful APIs')
   })
 
   test('can create and immediately delete an article end-to-end', async ({ page }) => {

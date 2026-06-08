@@ -165,7 +165,7 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:5255/api
           NEXT_PUBLIC_API_TIMEOUT: 30000
           # Auth.js v5 calls auth() in server components — next build fails without this.
-          AUTH_SECRET: test-secret-for-e2e
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'test-secret-for-e2e' }}
           AUTH_TRUST_HOST: true
 
       - name: Start frontend server
@@ -175,8 +175,15 @@ jobs:
           timeout 60 bash -c 'until curl -sf http://localhost:3000 > /dev/null; do sleep 2; done'
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:5255/api
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          AUTH_ENTRA_ISSUER: ${{ secrets.AUTH_ENTRA_ISSUER }}
+          # Deterministic auth config for E2E. Real secrets are used when configured
+          # (e.g. a downstream deployment); otherwise these non-sensitive fallbacks let
+          # the synthetic-session suite run with no repo secrets. AUTH_SECRET must match
+          # the value used by the "Run E2E tests" step so global.setup.ts's injected
+          # session cookie validates. A non-empty AUTH_ENTRA_ISSUER is required: without
+          # it Auth.js config validation fails and auth() returns a 500 body instead of
+          # null, which breaks the unauthenticated "redirect to /login" guards.
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'test-secret-for-e2e' }}
+          AUTH_ENTRA_ISSUER: ${{ secrets.AUTH_ENTRA_ISSUER || 'https://login.microsoftonline.com/common/v2.0' }}
           AUTH_ENTRA_CLIENT_ID: ${{ secrets.AUTH_ENTRA_CLIENT_ID }}
           AUTH_ENTRA_CLIENT_SECRET: ${{ secrets.AUTH_ENTRA_CLIENT_SECRET }}
           AUTH_API_SCOPE_READ: ${{ secrets.AUTH_API_SCOPE_READ }}
@@ -188,8 +195,11 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           NEXT_PUBLIC_API_BASE_URL: http://localhost:5255/api
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          AUTH_ENTRA_ISSUER: ${{ secrets.AUTH_ENTRA_ISSUER }}
+          # Must match the "Start frontend server" step's AUTH_SECRET so the session
+          # cookie that global.setup.ts injects (signed here) validates against the
+          # running server. Falls back to a non-secret value when no repo secret exists.
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'test-secret-for-e2e' }}
+          AUTH_ENTRA_ISSUER: ${{ secrets.AUTH_ENTRA_ISSUER || 'https://login.microsoftonline.com/common/v2.0' }}
           AUTH_ENTRA_CLIENT_ID: ${{ secrets.AUTH_ENTRA_CLIENT_ID }}
           AUTH_ENTRA_CLIENT_SECRET: ${{ secrets.AUTH_ENTRA_CLIENT_SECRET }}
           AUTH_API_SCOPE_READ: ${{ secrets.AUTH_API_SCOPE_READ }}
