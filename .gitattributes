@@ -1,0 +1,54 @@
+# Normalize line endings: detect text files automatically and store them with
+# LF in the repository AND check them out with LF on every platform. This keeps
+# diffs clean and stops the "LF will be replaced by CRLF" warnings on Windows.
+* text=auto eol=lf
+
+# --- Source & config (explicit text) --------------------------------------
+*.ts      text
+*.tsx     text
+*.js      text
+*.jsx     text
+*.mjs     text
+*.cjs     text
+*.json    text
+*.css     text
+*.scss    text
+*.html    text
+*.md      text
+*.mdx     text
+*.yml     text
+*.yaml    text
+*.cs      text
+*.csproj  text
+*.props   text
+*.targets text
+*.bicep   text
+*.sql     text
+*.svg     text
+*.sh      text eol=lf
+*.ps1     text eol=lf
+
+# --- Files that must keep CRLF on Windows tooling -------------------------
+*.sln     text eol=crlf
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# --- Binary (never normalize, never diff as text) -------------------------
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.webp    binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+*.pdf     binary
+*.zip     binary
+*.gz      binary
+*.db      binary
+*.sqlite  binary
+
+# --- Generated files: collapse in diffs / exclude from language stats -----
+package-lock.json linguist-generated=true -diff

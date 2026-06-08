@@ -1,5 +1,17 @@
 # AI Fullstack Accelerator
 
+[![Test Suite](https://github.com/sandropetterle/ai-fullstack-accelerator/actions/workflows/test.yml/badge.svg)](https://github.com/sandropetterle/ai-fullstack-accelerator/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/sandropetterle/ai-fullstack-accelerator/branch/master/graph/badge.svg)](https://codecov.io/gh/sandropetterle/ai-fullstack-accelerator)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Use this template](https://img.shields.io/badge/Use%20this-template-2ea44f?logo=github&logoColor=white)](https://github.com/sandropetterle/ai-fullstack-accelerator/generate)
+
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![.NET 8](https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Strapi 5](https://img.shields.io/badge/Strapi-5-4945FF?logo=strapi&logoColor=white)](https://strapi.io)
+[![Azure](https://img.shields.io/badge/Azure-Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/products/container-apps)
+
 > **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 8 + Strapi 5 CMS + Azure IaC.
 > Clone, rename your entity, and ship.
 
