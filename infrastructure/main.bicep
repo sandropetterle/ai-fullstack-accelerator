@@ -163,8 +163,13 @@ module containerApps 'modules/containerApps.bicep' = {
 
 var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
+// Plan-time copy of the Key Vault name (mirrors keyvault.bicep) so role-assignment
+// names satisfy BCP120 — they must be calculable at deployment start, not from the
+// keyvault module's runtime outputs. Same inputs ⇒ identical guid(), so idempotent.
+var kvNameForRoleAssignment = 'kv-${projectName}-${uniqueString(resourceGroup().id)}'
+
 resource kvSecretsUserApi 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, keyvault.outputs.kvName, '${projectName}-api-${environment}', kvSecretsUserRoleId)
+  name: guid(resourceGroup().id, kvNameForRoleAssignment, '${projectName}-api-${environment}', kvSecretsUserRoleId)
   scope: resourceGroup()
   properties: {
     principalId: containerApps.outputs.apiPrincipalId
@@ -174,7 +179,7 @@ resource kvSecretsUserApi 'Microsoft.Authorization/roleAssignments@2022-04-01' =
 }
 
 resource kvSecretsUserWeb 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, keyvault.outputs.kvName, '${projectName}-web-${environment}', kvSecretsUserRoleId)
+  name: guid(resourceGroup().id, kvNameForRoleAssignment, '${projectName}-web-${environment}', kvSecretsUserRoleId)
   scope: resourceGroup()
   properties: {
     principalId: containerApps.outputs.webPrincipalId
@@ -184,7 +189,7 @@ resource kvSecretsUserWeb 'Microsoft.Authorization/roleAssignments@2022-04-01' =
 }
 
 resource kvSecretsUserCms 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, keyvault.outputs.kvName, '${projectName}-cms-${environment}', kvSecretsUserRoleId)
+  name: guid(resourceGroup().id, kvNameForRoleAssignment, '${projectName}-cms-${environment}', kvSecretsUserRoleId)
   scope: resourceGroup()
   properties: {
     principalId: containerApps.outputs.cmsPrincipalId

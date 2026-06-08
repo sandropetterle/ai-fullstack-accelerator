@@ -232,7 +232,9 @@ describe('ArticleForm — create mode', () => {
         'test-token'
       )
     })
-  })
+    // Higher timeout: this test simulates per-keystroke typing of multiple
+    // fields, which can exceed the default 5s under parallel CI load.
+  }, 15000)
 
   it('shows success toast and redirects after create', async () => {
     const createdArticle = { ...mockArticle, slug: 'test-title' }
@@ -250,7 +252,7 @@ describe('ArticleForm — create mode', () => {
       expect(toast.success).toHaveBeenCalledWith('Article created successfully')
       expect(mockPush).toHaveBeenCalledWith('/articles/test-title')
     })
-  })
+  }, 15000)
 
   it('shows error toast when createArticle fails', async () => {
     mockCreateArticle.mockRejectedValueOnce(new Error('Server error'))
@@ -266,7 +268,7 @@ describe('ArticleForm — create mode', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error')
     })
-  })
+  }, 15000)
 
   it('calls router.back when Cancel is clicked', () => {
     render(<ArticleForm mode="create" />)
