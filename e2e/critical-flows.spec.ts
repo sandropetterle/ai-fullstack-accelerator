@@ -388,6 +388,12 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
     // Use toHaveURL (assertion-based polling) instead of waitForURL (navigation event)
     // — more reliable with Next.js pushState soft-navigation across all browsers
     await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
+    // Gate on the checkbox reflecting its checked state before selecting the next
+    // tag. This proves FilterPanel re-rendered with the updated selectedTags so the
+    // next click's onChange closure isn't stale. Without it, WebKit/Firefox can fire
+    // the 2nd click before the 1st soft-nav settles and the 2nd tag never appends
+    // (URL stuck at `tags=Architecture`) — the observed cross-browser flake.
+    await expect(firstTag).toBeChecked()
 
     // Select a second tag (Security) — toggles comma-separated tags list
     const secondTag = page.getByRole('checkbox', { name: 'Security' })
@@ -418,6 +424,9 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
     await expect(firstTag).toBeVisible({ timeout: 5_000 })
     await firstTag.click()
     await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
+    // Settle the first selection before the second click (see the toggle test
+    // above) so the 2nd tag reliably appends instead of racing the soft-nav.
+    await expect(firstTag).toBeChecked()
 
     const secondTag = page.getByRole('checkbox', { name: 'Security' })
     await expect(secondTag).toBeVisible({ timeout: 5_000 })
