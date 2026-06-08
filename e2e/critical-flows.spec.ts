@@ -428,8 +428,10 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
     await expect(allBtn).toBeVisible({ timeout: 5_000 })
     await allBtn.click()
 
-    await page.waitForURL(/tagMode=all/, { timeout: 10_000 })
-    expect(page.url()).toContain('tagMode=all')
+    // toHaveURL (assertion polling) instead of waitForURL (navigation event):
+    // this is the 3rd soft pushState in the chain and waitForURL intermittently
+    // misses it on all browsers (observed flaky on chromium + webkit).
+    await expect(page).toHaveURL(/tagMode=all/, { timeout: 10_000 })
   })
 })
 
@@ -536,8 +538,9 @@ test.describe('Saved Searches', () => {
     // "Delete saved search: My Tutorials" (contains the name as substring).
     await savedList.getByRole('button', { name: 'My Tutorials', exact: true }).click()
 
-    await page.waitForURL(/category=Tutorial/, { timeout: 10_000 })
-    expect(page.url()).toContain('category=Tutorial')
+    // toHaveURL (assertion polling) is more reliable than waitForURL for the
+    // soft pushState that applying a saved search triggers (observed flaky).
+    await expect(page).toHaveURL(/category=Tutorial/, { timeout: 10_000 })
   })
 
   test('deleting a saved search removes it from the list', async ({ page }) => {

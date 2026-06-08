@@ -113,8 +113,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # Only run E2E tests on main branch or when manually triggered
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    # Run E2E on pushes to the default branch (master) or when manually triggered.
+    # PRs skip E2E (treated as OK by test-summary) to keep PR feedback fast; the
+    # post-merge master push run is the gate. Verified green across chromium,
+    # firefox and webkit via workflow_dispatch before enabling.
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         browser: [chromium, firefox, webkit]
@@ -274,7 +277,7 @@ jobs:
             echo "e2e-tests: FAILED"
             FAILED=true
           elif [[ "${{ needs.e2e-tests.result }}" == "skipped" ]]; then
-            echo "e2e-tests: SKIPPED (PR — main-only)"
+            echo "e2e-tests: SKIPPED (PR — runs on master push / dispatch)"
           fi
 
           if [ "$FAILED" = true ]; then
