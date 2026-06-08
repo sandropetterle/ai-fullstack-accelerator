@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!--
+    Coverage configuration for the XPlat Code Coverage collector used by the
+    backend test job in .github/workflows/test.yml.
+    Emits Cobertura XML (consumed by the codecov step). No coverage threshold
+    is enforced here; gating is left to codecov.
+  -->
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Exclude test assemblies and generated code from coverage -->
+          <Exclude>[*.Tests]*,[*]*.Migrations.*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
