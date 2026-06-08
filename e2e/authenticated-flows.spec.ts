@@ -109,9 +109,12 @@ test.describe('Authenticated — UI', () => {
 
   test('navigating to /articles/new shows the create form (no redirect)', async ({ page }) => {
     await page.goto('/articles/new')
-    // Confirm the form rendered (not redirected)
+    // Confirm the form rendered (not redirected). .first() tolerates a transient
+    // duplicate form node that the production build can briefly emit during
+    // hydration (observed as a strict-mode "2 elements" flake), without masking a
+    // real redirect — if auth failed we'd be on /login with no form at all.
     await expect(
-      page.locator('[aria-label="Create article form"]')
+      page.locator('[aria-label="Create article form"]').first()
     ).toBeVisible({ timeout: 10_000 })
     await expect(page.getByRole('button', { name: /Create Article/i })).toBeVisible()
   })
@@ -149,7 +152,7 @@ test.describe('Authenticated — API writes', () => {
 
     await page.goto('/articles/new')
     await expect(
-      page.locator('[aria-label="Create article form"]')
+      page.locator('[aria-label="Create article form"]').first()
     ).toBeVisible({ timeout: 10_000 })
 
     await page.fill('#title', title)
@@ -164,7 +167,7 @@ test.describe('Authenticated — API writes', () => {
   test('can edit an existing article and save changes', async ({ page }) => {
     await page.goto('/articles/building-restful-apis-aspnet-core/edit')
     await expect(
-      page.locator('[aria-label="Edit article form"]')
+      page.locator('[aria-label="Edit article form"]').first()
     ).toBeVisible({ timeout: 10_000 })
 
     // Update the author field (safe — doesn't affect the slug or break other tests)
@@ -182,7 +185,7 @@ test.describe('Authenticated — API writes', () => {
     // Step 1: Create a temporary article
     await page.goto('/articles/new')
     await expect(
-      page.locator('[aria-label="Create article form"]')
+      page.locator('[aria-label="Create article form"]').first()
     ).toBeVisible({ timeout: 10_000 })
     await page.fill('#title', title)
     await page.fill('#shortDescription', 'Temporary article created for the delete E2E test.')

@@ -22,7 +22,11 @@ import { test, expect, type Page } from '@playwright/test'
  * React that the controlled value changed.
  */
 async function fillDateInput(page: Page, selector: string, value: string) {
-  await page.locator(selector).evaluate((el, val: string) => {
+  // .first() guards against a Firefox-only quirk where the production build can
+  // render a duplicate date <input> during hydration (see the date-range
+  // beforeEach). Callers pass a `:visible` selector so we target the desktop
+  // FilterPanel input; .first() then collapses any identical twin to one node.
+  await page.locator(selector).first().evaluate((el, val: string) => {
     Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(el, val)
     el.dispatchEvent(new Event('input', { bubbles: true }))
     el.dispatchEvent(new Event('change', { bubbles: true }))
@@ -317,15 +321,21 @@ test.describe('Advanced Search — Date Range Filter', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/articles')
-    // Wait for #date-from to be visible — stronger signal than the heading alone.
-    // The heading appears in server-rendered HTML before React hydrates, but
-    // #date-from visible confirms FilterPanel is mounted with event handlers
-    // attached. This prevents a race where page.fill() runs before onChange is wired.
-    await expect(page.locator('#date-from')).toBeVisible({ timeout: 10_000 })
+    // Wait for the date input to be visible — stronger signal than the heading
+    // alone. The heading appears in server-rendered HTML before React hydrates,
+    // but the date input confirms FilterPanel is mounted with event handlers
+    // attached. This prevents a race where the fill runs before onChange is wired.
+    //
+    // Scope to `:visible` + .first(): on Firefox the production build can briefly
+    // render TWO #date-from inputs during hydration (a lone duplicate — the tag
+    // checkboxes and Filters heading are NOT duplicated), which makes a bare
+    // `#date-from` locator throw a strict-mode violation. `:visible` selects the
+    // mounted desktop FilterPanel input and .first() collapses any visible twin.
+    await expect(page.locator('#date-from:visible').first()).toBeVisible({ timeout: 10_000 })
   })
 
   test('setting a From date updates the URL with dateFrom parameter', async ({ page }) => {
-    await fillDateInput(page, '#date-from', '2024-01-01')
+    await fillDateInput(page, '#date-from:visible', '2024-01-01')
     await page.waitForURL(/dateFrom=2024-01-01/, { timeout: 10_000 })
     expect(page.url()).toContain('dateFrom=2024-01-01')
   })
@@ -335,9 +345,9 @@ test.describe('Advanced Search — Date Range Filter', () => {
     // Without a valid min, Chromium silently rejects fill() on type="date" inputs
     // and the React onChange never fires.
     await page.goto('/articles?dateFrom=2024-01-01')
-    await expect(page.locator('#date-to')).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('#date-to:visible').first()).toBeVisible({ timeout: 10_000 })
 
-    await fillDateInput(page, '#date-to', '2024-12-31')
+    await fillDateInput(page, '#date-to:visible', '2024-12-31')
     await page.waitForURL(/dateTo=2024-12-31/, { timeout: 10_000 })
     expect(page.url()).toContain('dateTo=2024-12-31')
   })
