@@ -5,7 +5,9 @@
   "overrides": {
     "ajv": "^8.8.2",
     "flatted": ">=3.4.0",
-    "serialize-javascript": ">=7.0.3"
+    "serialize-javascript": ">=7.0.3",
+    "tmp": "^0.2.6",
+    "uuid": "^11.1.1"
   },
   "description": "AI Fullstack Accelerator - A fullstack template for building AI-powered applications with Next.js, ASP.NET Core, and Strapi CMS",
   "scripts": {

@@ -1,12 +1,58 @@
 # Technical Decisions Log — AI Fullstack Accelerator
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-06-08
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **5 active decisions | 0 archived**
+> **6 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 6: npm `overrides` for Dev-Tool Transitive Vulnerabilities
+
+**Date:** 2026-06-08
+**Title:** Pin patched transitive deps via `overrides`; accept unfixable dev-only advisories
+**Category:** Security
+**Status:** Active
+
+### Context / Problem
+
+Dependabot reported ~24 open npm advisories, all transitive in `package-lock.json`. After a non-breaking `npm audit fix` (PR #37) cleared the production-facing ones, 13 remained. None are fixable by `npm audit fix` without a breaking downgrade: `npm audit fix --force` wanted to drag `@lhci/cli` back to `0.1.0` and `@storybook/nextjs` to `7.0.14`, wrecking the dev toolchain. The remaining advisories are entirely in dev tooling (Lighthouse CI, Storybook) or framework-internal, and the production audit gate (`npm audit --omit=dev --audit-level=high`) was already passing.
+
+### Decision
+
+Resolve what is safely fixable with `package.json` `overrides` (pin the *transitive* dep to its patched version without downgrading the parent), and formally accept the rest:
+
+- **Override `tmp` → `^0.2.6`** (resolves to 0.2.7): clears the only HIGH advisory plus the `external-editor` / `inquirer` cascade. Consumers (`@lhci/cli`, `external-editor`) used `tmp.fileSync()`-style APIs that are stable across the 0.0.x→0.2.x jump.
+- **Override `uuid` → `^11.1.1`**: clears the `uuid` advisory and `@lhci/cli`. Only consumer is `@lhci/cli`, which imports via `require('uuid').v4()` (the namespace entry, still present in v11), not the deep `uuid/v4` path removed in v7+.
+- **Accept (no action) — `elliptic` cluster** (6 LOW: `elliptic`, `browserify-sign`, `create-ecdh`, `crypto-browserify`, `node-polyfill-webpack-plugin`, `@storybook/nextjs`): `elliptic` has **no patched version published**; the whole chain is dev-only (Storybook's webpack node-polyfills) and never ships to production.
+- **Accept (no action) — `postcss` / `next`** (2 MODERATE): the vulnerable `postcss` is bundled inside `next`; the only `npm audit` fix is downgrading Next.js to 9.x. Not worth a framework downgrade for a moderate advisory; the top-level `postcss` is already patched (8.5.15).
+
+Result: audit dropped 13 → 8 (0 high, 2 moderate, 6 low); production audit gate stays green.
+
+> **Lockfile tooling note:** CI runs Node 20 (npm 10). npm 11 (Node 22/24) resolves the `@emnapi` WASM-runtime optional-dependency subtree differently and produces a lockfile CI's `npm ci` rejects (EUSAGE). Regenerate the lockfile with `npx npm@10 install` and verify `npx npm@10 ci --dry-run` exits 0.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| `npm audit fix --force` | Downgrades `@lhci/cli`→0.1.0 and `@storybook/nextjs`→7.0.14 — breaks the dev toolchain |
+| Downgrade Next.js to fix bundled `postcss` | Breaking change to the production framework for a moderate, framework-internal advisory |
+| Dismiss all 13 alerts in the GitHub UI | Loses the genuinely-fixable `tmp` (HIGH) and `uuid` fixes; hides them from re-evaluation |
+| Override `elliptic` | No patched version exists — nothing safe to pin to |
+
+### Consequences
+
+- `tmp` and `uuid` are force-resolved tree-wide; future bumps of `@lhci/cli` should re-check the overrides are still needed.
+- The 6 `elliptic`-cluster + 2 `postcss`/`next` advisories remain visible in Dependabot as accepted dev-only/framework-internal risk; revisit when upstreams publish fixes (or Storybook drops the polyfill chain / Next bumps its bundled postcss).
+- Verified: `npm ci` (npm 10 + 11), `npm run test:ci`, `npm run build`, `npm run build-storybook`, and `lhci healthcheck` all green with the overrides.
+
+### Files Changed
+
+- `package.json` — added `tmp` and `uuid` to `overrides`
+- `package-lock.json` — regenerated under npm 10
 
 ---
 
