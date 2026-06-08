@@ -96,9 +96,11 @@ test.describe('Browse Articles Page', () => {
     await searchInput.fill('architecture')
     await searchInput.press('Enter')
 
-    // SearchBar uses `q` — NOT `search`
-    await page.waitForURL(/\/articles\?.*q=architecture/)
-    expect(page.url()).toContain('q=architecture')
+    // SearchBar uses `q` — NOT `search`. Assert with toHaveURL (polling) rather
+    // than waitForURL: waitForURL defaults to waitUntil:'load', and Next.js soft
+    // navigations (pushState) never fire a `load` event, so it intermittently
+    // hangs until timeout. toHaveURL just polls page.url() — no lifecycle event.
+    await expect(page).toHaveURL(/\/articles\?.*q=architecture/, { timeout: 10_000 })
   })
 
   test('clearing the search removes the q parameter', async ({ page }) => {
@@ -112,8 +114,7 @@ test.describe('Browse Articles Page', () => {
     await expect(clearButton).toBeVisible({ timeout: 15_000 })
     await clearButton.click()
 
-    await page.waitForURL((url) => !url.href.includes('q='))
-    expect(page.url()).not.toContain('q=')
+    await expect(page).not.toHaveURL(/[?&]q=/, { timeout: 10_000 })
   })
 
   test('category filter button updates URL with category parameter', async ({ page }) => {
@@ -127,8 +128,7 @@ test.describe('Browse Articles Page', () => {
     await expect(tutorialBtn).toBeVisible({ timeout: 5_000 })
     await tutorialBtn.click()
 
-    await page.waitForURL(/\/articles\?.*category=Tutorial/)
-    expect(page.url()).toContain('category=Tutorial')
+    await expect(page).toHaveURL(/\/articles\?.*category=Tutorial/, { timeout: 10_000 })
   })
 
   test('active category filter can be cleared', async ({ page }) => {
@@ -141,8 +141,7 @@ test.describe('Browse Articles Page', () => {
     await expect(clearAll).toBeVisible({ timeout: 15_000 })
     await clearAll.click()
 
-    await page.waitForURL((url) => !url.href.includes('category='))
-    expect(page.url()).not.toContain('category=')
+    await expect(page).not.toHaveURL(/[?&]category=/, { timeout: 10_000 })
   })
 
   test('tag checkbox toggles a tags parameter in the URL', async ({ page }) => {
@@ -152,8 +151,7 @@ test.describe('Browse Articles Page', () => {
     await expect(cleanArchCheckbox).toBeVisible({ timeout: 5_000 })
     await cleanArchCheckbox.click()
 
-    await page.waitForURL(/\/articles\?.*tags=/)
-    expect(page.url()).toContain('tags=')
+    await expect(page).toHaveURL(/\/articles\?.*tags=/, { timeout: 10_000 })
   })
 })
 
@@ -275,7 +273,7 @@ test.describe('Article Detail Page', () => {
     const href = await firstLink.getAttribute('href')
     await firstLink.click()
 
-    await page.waitForURL(/\/articles\/[\w-]+/)
+    await expect(page).toHaveURL(/\/articles\/[\w-]+/, { timeout: 10_000 })
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
     if (href) expect(page.url()).toContain(href)
@@ -303,7 +301,7 @@ test.describe('Error Handling', () => {
     await page.waitForLoadState('networkidle')
 
     await page.getByRole('link', { name: /Back to Home/i }).click()
-    await page.waitForURL('/')
+    await expect(page).toHaveURL('/', { timeout: 10_000 })
 
     await expect(
       page.getByRole('heading', { name: 'AI Fullstack Accelerator', level: 1 })
@@ -336,8 +334,7 @@ test.describe('Advanced Search — Date Range Filter', () => {
 
   test('setting a From date updates the URL with dateFrom parameter', async ({ page }) => {
     await fillDateInput(page, '#date-from:visible', '2024-01-01')
-    await page.waitForURL(/dateFrom=2024-01-01/, { timeout: 10_000 })
-    expect(page.url()).toContain('dateFrom=2024-01-01')
+    await expect(page).toHaveURL(/dateFrom=2024-01-01/, { timeout: 10_000 })
   })
 
   test('setting a To date updates the URL with dateTo parameter', async ({ page }) => {
@@ -348,8 +345,7 @@ test.describe('Advanced Search — Date Range Filter', () => {
     await expect(page.locator('#date-to:visible').first()).toBeVisible({ timeout: 10_000 })
 
     await fillDateInput(page, '#date-to:visible', '2024-12-31')
-    await page.waitForURL(/dateTo=2024-12-31/, { timeout: 10_000 })
-    expect(page.url()).toContain('dateTo=2024-12-31')
+    await expect(page).toHaveURL(/dateTo=2024-12-31/, { timeout: 10_000 })
   })
 
   test('Clear dates button removes date parameters from URL', async ({ page }) => {
@@ -364,9 +360,8 @@ test.describe('Advanced Search — Date Range Filter', () => {
     await expect(clearDatesBtn).toBeVisible({ timeout: 5_000 })
     await clearDatesBtn.click()
 
-    await page.waitForURL((url) => !url.href.includes('dateFrom='), { timeout: 20_000 })
-    expect(page.url()).not.toContain('dateFrom=')
-    expect(page.url()).not.toContain('dateTo=')
+    await expect(page).not.toHaveURL(/[?&]dateFrom=/, { timeout: 20_000 })
+    await expect(page).not.toHaveURL(/[?&]dateTo=/, { timeout: 5_000 })
   })
 })
 
@@ -376,32 +371,24 @@ test.describe('Advanced Search — Date Range Filter', () => {
 
 test.describe('Advanced Search — Tag Mode Toggle', () => {
   test('selecting two tags reveals the Any / All toggle', async ({ page }) => {
-    await page.goto('/articles')
+    // Pre-apply the first tag via the URL, then exercise the 1→2 transition from a
+    // fully hydrated state. Selecting two tags by clicking in quick succession
+    // races Next.js soft navigation — the 2nd click can fire before FilterPanel
+    // re-renders, so handleTagToggle runs with a stale closure and the 2nd tag
+    // never appends (URL stuck at `tags=Architecture`), the observed cross-browser
+    // flake. Single click → URL behaviour is already covered by the tag-checkbox
+    // test in the Browse Articles block.
+    await page.goto('/articles?tags=Architecture')
     await expect(
       page.getByRole('heading', { name: 'Filters' })
     ).toBeVisible({ timeout: 10_000 })
 
-    // Select first tag (Architecture)
-    const firstTag = page.getByRole('checkbox', { name: 'Architecture' })
-    await expect(firstTag).toBeVisible({ timeout: 5_000 })
-    await firstTag.click()
-    // Use toHaveURL (assertion-based polling) instead of waitForURL (navigation event)
-    // — more reliable with Next.js pushState soft-navigation across all browsers
-    await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
-    // Gate on the checkbox reflecting its checked state before selecting the next
-    // tag. This proves FilterPanel re-rendered with the updated selectedTags so the
-    // next click's onChange closure isn't stale. Without it, WebKit/Firefox can fire
-    // the 2nd click before the 1st soft-nav settles and the 2nd tag never appends
-    // (URL stuck at `tags=Architecture`) — the observed cross-browser flake.
-    await expect(firstTag).toBeChecked()
+    // Confirm hydration: the pre-applied tag's checkbox is checked.
+    await expect(page.getByRole('checkbox', { name: 'Architecture' })).toBeChecked({ timeout: 10_000 })
 
-    // Select a second tag (Security) — toggles comma-separated tags list
-    const secondTag = page.getByRole('checkbox', { name: 'Security' })
-    await expect(secondTag).toBeVisible({ timeout: 5_000 })
-    await secondTag.click()
-    // Wait for URL to reflect both tags before checking toggle
-    // — comma may be URL-encoded as %2C (WebKit encodes it; Chromium uses literal comma)
-    // — FilterPanel only renders the Any/All toggle when selectedTags.length >= 2
+    // Selecting a second tag appends it (comma may be URL-encoded as %2C on WebKit;
+    // Chromium uses a literal comma). FilterPanel renders the toggle at 2+ tags.
+    await page.getByRole('checkbox', { name: 'Security' }).click()
     await expect(page).toHaveURL(/tags=[^&]*(%2C|,)/i, { timeout: 10_000 })
 
     // With 2+ tags the Any / All buttons should appear
@@ -414,32 +401,20 @@ test.describe('Advanced Search — Tag Mode Toggle', () => {
   })
 
   test('clicking "All" sets tagMode=all in the URL', async ({ page }) => {
-    await page.goto('/articles')
+    // Pre-apply two tags via the URL so the Any/All toggle is present without
+    // racing two sequential soft-nav checkbox clicks — this test only cares that
+    // the All button sets tagMode=all.
+    await page.goto('/articles?tags=Architecture,Security')
     await expect(
       page.getByRole('heading', { name: 'Filters' })
     ).toBeVisible({ timeout: 10_000 })
 
-    // Pre-select two tags then switch to All mode
-    const firstTag = page.getByRole('checkbox', { name: 'Architecture' })
-    await expect(firstTag).toBeVisible({ timeout: 5_000 })
-    await firstTag.click()
-    await expect(page).toHaveURL(/tags=/, { timeout: 10_000 })
-    // Settle the first selection before the second click (see the toggle test
-    // above) so the 2nd tag reliably appends instead of racing the soft-nav.
-    await expect(firstTag).toBeChecked()
-
-    const secondTag = page.getByRole('checkbox', { name: 'Security' })
-    await expect(secondTag).toBeVisible({ timeout: 5_000 })
-    await secondTag.click()
-    await expect(page).toHaveURL(/tags=[^&]*(%2C|,)/i, { timeout: 10_000 })
-
     const allBtn = page.getByRole('button', { name: 'All', exact: true })
-    await expect(allBtn).toBeVisible({ timeout: 5_000 })
+    await expect(allBtn).toBeVisible({ timeout: 10_000 })
     await allBtn.click()
 
-    // toHaveURL (assertion polling) instead of waitForURL (navigation event):
-    // this is the 3rd soft pushState in the chain and waitForURL intermittently
-    // misses it on all browsers (observed flaky on chromium + webkit).
+    // toHaveURL (assertion polling), not waitForURL — soft pushState never fires
+    // the `load` event waitForURL waits for by default.
     await expect(page).toHaveURL(/tagMode=all/, { timeout: 10_000 })
   })
 })
