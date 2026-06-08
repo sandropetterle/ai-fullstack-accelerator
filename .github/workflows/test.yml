@@ -2,9 +2,9 @@ name: Test Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 # Deny all permissions by default; each job grants only what it needs
