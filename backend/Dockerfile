@@ -25,7 +25,7 @@ RUN dotnet build "Accelerator.Api.csproj" -c Release -o /app/build
 RUN dotnet publish "Accelerator.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Runtime (Alpine — smaller image, BusyBox wget for healthcheck)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine@sha256:354c2fcfb3c23abc60d98f0380cdb403fba844a62a123b6343a8c9611209995c AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:49dce27611d8fe4fbe50483ea9438abd18ccb0198d0737af231335244d0c9b94 AS runtime
 WORKDIR /app
 
 # Create non-root user (Alpine syntax)
