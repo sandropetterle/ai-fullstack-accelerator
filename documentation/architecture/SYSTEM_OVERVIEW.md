@@ -42,7 +42,7 @@ The platform demonstrates enterprise-grade development practices (Clean Architec
 | Technology | Purpose |
 |-----------|---------|
 | ASP.NET Core 10 (Web API) | RESTful API server |
-| C# 12 | Implementation language |
+| C# 14 | Implementation language |
 | Entity Framework Core 10 | ORM with code-first migrations |
 | FluentValidation | DTO and query validation |
 | xUnit + Moq | Testing framework |

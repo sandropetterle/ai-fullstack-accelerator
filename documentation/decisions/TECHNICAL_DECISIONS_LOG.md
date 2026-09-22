@@ -4,9 +4,62 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **7 active decisions | 0 archived**
+> **8 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 8: Upgrade Backend to .NET 10 LTS
+
+**Date:** 2026-09-22
+**Title:** Migrate backend from .NET 8 / EF Core 8 to .NET 10 / EF Core 10 (LTS to LTS)
+**Category:** Technology
+**Status:** Active
+
+### Context / Problem
+
+The backend targeted .NET 8 (LTS, support ends November 2026). Six Dependabot PRs had piled up (#9 runtime image 10.0-alpine, #44 Swashbuckle 10.2.3, #52 SDK image 9.0, #59/#60 Microsoft.* and EF Core 8.0.30 servicing, #61 xunit.runner.visualstudio 4.0.0). They were mutually inconsistent: runtime image 10.0 with an SDK image 9.0 and packages still on 8.0.x. `dependabot.yml` ignores `Microsoft.*` major bumps, so the framework move had to be done by hand.
+
+### Decision
+
+Move every backend project to `net10.0` in one PR, superseding the six Dependabot PRs:
+
+- All Microsoft.* packages -> 10.0.12 (EF Core, JwtBearer, Mvc.Testing, HealthChecks.EFCore, Caching); Asp.Versioning 8.1.1 -> 10.2.1; Swashbuckle 10.2.3; Microsoft.NET.Test.Sdk 18.10.1; xunit.runner.visualstudio 4.0.0; coverlet.collector 10.0.1; FluentAssertions 8.11.0.
+- Docker: `sdk:10.0` build / `aspnet:10.0-alpine` runtime (digest-pinned); CI `setup-dotnet` -> `10.0.x`.
+- Code: `ArticleEndpointsTests` also removes `IDbContextOptionsConfiguration<ApplicationDbContext>` when swapping in the InMemory provider. EF Core 9 moved provider configuration into that service, and without the removal SQLite and InMemory are both registered. `Program.cs` adds `.AddMvc()` to the API-versioning builder (Asp.Versioning 10.2 analyzer AV0013).
+- Kept: Application Insights SDK 2.23.0 (3.x is an OpenTelemetry rewrite, a separate decision), FluentValidation.AspNetCore 11.3.1, xunit v2, Moq.
+- No new EF migration: `has-pending-model-changes` reports no model changes on SQLite, and the EF 8 snapshot is compatible.
+
+### Rationale
+
+.NET 10 is the current LTS (supported to November 2028), so going LTS to LTS skips .NET 9 STS. One coordinated PR avoids the half-migrated states the Dependabot PRs would have created. The `Microsoft.*` semver-major ignore stays in place so .NET 11 (STS) is not auto-proposed.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Merge the Dependabot PRs individually | Mixed 8.0 packages / 9.0 SDK / 10.0 runtime images; #59/#60 also add a stray EF Design reference to Infrastructure |
+| Stop at .NET 9 | STS release, already near end of support; a second migration would follow within months |
+| Stay on Asp.Versioning 8.1.1 | Works on net10, but 10.x is the line aligned with .NET 10 LTS and brings analyzers that catch misconfiguration at build time |
+| Suppress `PendingModelChangesWarning` for SQL Server | Hides the real issue: the SQLite-generated migrations never applied cleanly to SQL Server (see Consequences) |
+
+### Consequences
+
+- Runtime image grows because EF Core 10's SQLite native assets ship for all RIDs; the Dockerfile uses `COPY --chown` to avoid duplicating the publish layer. A RID-specific publish is a possible follow-up.
+- Pre-existing, not introduced here: the single migrations set is SQLite-typed. Applying it to SQL Server failed on EF 8 (`InvalidCastException` Guid->string); on EF 10 it fails earlier with `PendingModelChangesWarning`. SQL Server needs its own provider-specific migrations assembly. Tracked as a follow-up.
+- Developers need the .NET 10 SDK and `dotnet-ef` 10.x (`dotnet tool update -g dotnet-ef --version 10.0.12`).
+- Verified: build 0 warnings; 109/109 tests with coverage; vulnerability audit clean; `dotnet ef database update` on SQLite; API smoke (health, articles, versioned routes, swagger); Docker build and run on `aspnet:10.0-alpine`.
+
+### Files Changed
+
+- `backend/src/*/*.csproj`, `backend/tests/*/*.csproj` — `net10.0` + package versions
+- `backend/tests/Accelerator.Api.Tests/IntegrationTests/ArticleEndpointsTests.cs` — EF 9+ provider swap
+- `backend/src/Accelerator.Api/Program.cs` — `.AddMvc()` on API versioning
+- `backend/Dockerfile` — .NET 10 base images, `COPY --chown`
+- `.github/workflows/test.yml`, `.github/workflows/backend-container-deploy.yml` — `10.0.x`
+- `.github/dependabot.yml` — group exclude-patterns; Docker major-version ignores for dotnet images
+- README.md, CLAUDE.md, docs/, documentation/architecture/, .github/CONTRIBUTING.md, .github/ISSUE_TEMPLATE/bug_report.yml, app/about/page.tsx — version references
 
 ---
 
@@ -360,56 +413,3 @@ Articles map to a wide range of real-world domains (blog posts, knowledge base e
 
 - 109 backend tests (all using Article entity)
 - 391 frontend tests (all using Article entity)
-
----
-
-## Decision 8: Upgrade Backend to .NET 10 LTS
-
-**Date:** 2026-09-22
-**Title:** Migrate backend from .NET 8 / EF Core 8 to .NET 10 / EF Core 10 (LTS to LTS)
-**Category:** Technology
-**Status:** Active
-
-### Context / Problem
-
-The backend targeted .NET 8 (LTS, support ends November 2026). Six Dependabot PRs had piled up (#9 runtime image 10.0-alpine, #44 Swashbuckle 10.2.3, #52 SDK image 9.0, #59/#60 Microsoft.* and EF Core 8.0.30 servicing, #61 xunit.runner.visualstudio 4.0.0). They were mutually inconsistent: runtime image 10.0 with an SDK image 9.0 and packages still on 8.0.x. `dependabot.yml` ignores `Microsoft.*` major bumps, so the framework move had to be done by hand.
-
-### Decision
-
-Move every backend project to `net10.0` in one PR, superseding the six Dependabot PRs:
-
-- All Microsoft.* packages -> 10.0.12 (EF Core, JwtBearer, Mvc.Testing, HealthChecks.EFCore, Caching); Asp.Versioning 8.1.1 -> 10.2.1; Swashbuckle 10.2.3; Microsoft.NET.Test.Sdk 18.10.1; xunit.runner.visualstudio 4.0.0; coverlet.collector 10.0.1; FluentAssertions 8.11.0.
-- Docker: `sdk:10.0` build / `aspnet:10.0-alpine` runtime (digest-pinned); CI `setup-dotnet` -> `10.0.x`.
-- Code: `ArticleEndpointsTests` also removes `IDbContextOptionsConfiguration<ApplicationDbContext>` when swapping in the InMemory provider. EF Core 9 moved provider configuration into that service, and without the removal SQLite and InMemory are both registered. `Program.cs` adds `.AddMvc()` to the API-versioning builder (Asp.Versioning 10.2 analyzer AV0013).
-- Kept: Application Insights SDK 2.23.0 (3.x is an OpenTelemetry rewrite, a separate decision), FluentValidation.AspNetCore 11.3.1, xunit v2, Moq.
-- No new EF migration: `has-pending-model-changes` reports no model changes on SQLite, and the EF 8 snapshot is compatible.
-
-### Rationale
-
-.NET 10 is the current LTS (supported to November 2028), so going LTS to LTS skips .NET 9 STS. One coordinated PR avoids the half-migrated states the Dependabot PRs would have created. The `Microsoft.*` semver-major ignore stays in place so .NET 11 (STS) is not auto-proposed.
-
-### Alternatives Evaluated
-
-| Alternative | Why Rejected |
-|------------|-------------|
-| Merge the Dependabot PRs individually | Mixed 8.0 packages / 9.0 SDK / 10.0 runtime images; #59/#60 also add a stray EF Design reference to Infrastructure |
-| Stop at .NET 9 | STS release, already near end of support; a second migration would follow within months |
-| Stay on Asp.Versioning 8.1.1 | Works on net10, but 10.x is the line aligned with .NET 10 LTS and brings analyzers that catch misconfiguration at build time |
-| Suppress `PendingModelChangesWarning` for SQL Server | Hides the real issue: the SQLite-generated migrations never applied cleanly to SQL Server (see Consequences) |
-
-### Consequences
-
-- Runtime image grows because EF Core 10's SQLite native assets ship for all RIDs; the Dockerfile uses `COPY --chown` to avoid duplicating the publish layer. A RID-specific publish is a possible follow-up.
-- Pre-existing, not introduced here: the single migrations set is SQLite-typed. Applying it to SQL Server failed on EF 8 (`InvalidCastException` Guid->string); on EF 10 it fails earlier with `PendingModelChangesWarning`. SQL Server needs its own provider-specific migrations assembly. Tracked as a follow-up.
-- Developers need the .NET 10 SDK and `dotnet-ef` 10.x (`dotnet tool update -g dotnet-ef --version 10.0.12`).
-- Verified: build 0 warnings; 109/109 tests with coverage; vulnerability audit clean; `dotnet ef database update` on SQLite; API smoke (health, articles, versioned routes, swagger); Docker build and run on `aspnet:10.0-alpine`.
-
-### Files Changed
-
-- `backend/src/*/*.csproj`, `backend/tests/*/*.csproj` — `net10.0` + package versions
-- `backend/tests/Accelerator.Api.Tests/IntegrationTests/ArticleEndpointsTests.cs` — EF 9+ provider swap
-- `backend/src/Accelerator.Api/Program.cs` — `.AddMvc()` on API versioning
-- `backend/Dockerfile` — .NET 10 base images, `COPY --chown`
-- `.github/workflows/test.yml`, `.github/workflows/backend-container-deploy.yml` — `10.0.x`
-- `.github/dependabot.yml` — group exclude-patterns; Docker major-version ignores for dotnet images
-- README.md, CLAUDE.md, docs/, documentation/architecture/, .github/CONTRIBUTING.md, .github/ISSUE_TEMPLATE/bug_report.yml, app/about/page.tsx — version references
