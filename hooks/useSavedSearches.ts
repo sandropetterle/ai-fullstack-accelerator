@@ -62,6 +62,7 @@ export function useSavedSearches(): UseSavedSearchesResult {
 
   // Hydrate from localStorage after mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrates state from a browser-only API (localStorage) unavailable during SSR/first render
     setSavedSearches(readFromStorage())
   }, [])
 

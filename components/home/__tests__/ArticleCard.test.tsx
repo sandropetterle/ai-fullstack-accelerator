@@ -9,9 +9,10 @@ import type { Article } from '@/lib/types/article'
 
 // Mock Next.js Link
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => {
+  function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
     return <a href={href}>{children}</a>
   }
+  return MockLink
 })
 
 describe('ArticleCard', () => {

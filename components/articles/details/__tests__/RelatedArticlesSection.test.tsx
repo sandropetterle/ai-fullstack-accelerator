@@ -3,9 +3,10 @@ import { RelatedArticlesSection } from '../RelatedArticlesSection'
 import type { Article } from '@/lib/types/article'
 
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  )
+  function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return <a href={href}>{children}</a>
+  }
+  return MockLink
 })
 
 const makeArticle = (id: string, title: string): Article => ({

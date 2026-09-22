@@ -2,9 +2,10 @@ import { render, screen } from '@testing-library/react'
 import { Logo } from '../Logo'
 
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  )
+  function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return <a href={href}>{children}</a>
+  }
+  return MockLink
 })
 
 describe('Logo', () => {

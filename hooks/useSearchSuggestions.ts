@@ -22,6 +22,7 @@ export function useSearchSuggestions(
 
   useEffect(() => {
     if (query.length < MIN_QUERY_LENGTH) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resets debounce state to match the latest `query` prop change; part of the debounce timer synchronization below
       setDebouncedQuery('')
       setIsLoading(false)
       return
