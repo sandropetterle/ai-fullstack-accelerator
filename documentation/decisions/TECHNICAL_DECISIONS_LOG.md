@@ -1,12 +1,62 @@
 # Technical Decisions Log — AI Fullstack Accelerator
 
-**Last Updated:** 2026-06-08
+**Last Updated:** 2026-09-22
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **6 active decisions | 0 archived**
+> **7 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 7: Security Bump of next 16.3 + next-auth beta.32; Accept extract-zip
+
+**Date:** 2026-09-22
+**Title:** Clear all production advisories via direct/in-range bumps; accept the unpatchable Lighthouse CI chain
+**Category:** Security
+**Status:** Active
+
+### Context / Problem
+
+Dependabot reported 70 open npm advisories (5 critical, 35 high), and the production audit gate (`npm audit --omit=dev --audit-level=high`) was red. The criticals were in `next` (unauthenticated RCE in the Image Optimization API and on Windows-hosted servers; fixed only in 16.3.3+, with no 16.2.x backport) and in `next-auth` / `@auth/core` (an Auth.js config error made `auth()` return a truthy error object, so `if (!session)` guards failed open; plus an email-normalizer homoglyph bypass). Twelve open Dependabot PRs each addressed one slice of this.
+
+### Decision
+
+Fold the twelve Dependabot PRs (#12, #49, #53, #54, #56, #57, #58, #62, #63, #64, #65, #66) into one lockfile regeneration:
+
+- **`next` → `^16.3.6`** (plus `eslint-config-next` → `^16.3.6`): minor bump is required for the criticals. 16.3.6 pins `postcss 8.5.23` and `sharp ^0.35.4`, which **resolves the bundled-postcss risk accepted in Decision 6**.
+- **`next-auth` → `^5.0.0-beta.32`** (pins `@auth/core 0.41.3`): one beta step. The upstream diff was reviewed in full: `auth()` now returns `null` on a server-config error (fail closed), OAuth check cookies are bound to their provider, `getToken()` no longer throws on malformed Bearer headers, and emails are NFKC-normalized. No application code changes: our `if (!session) redirect('/login')` guards now fail closed instead of crashing. The only removed module (`next-auth/providers/oauth-types`) is not imported.
+- **`isomorphic-dompurify` → `~3.19.0`** (tilde, not caret): 3.20–3.23 silently raised the Node floor to 22 via jsdom 30. 3.19.0 is the last Node-20 line and pulls `dompurify 3.4.15`.
+- **`postcss` (top-level) → `^8.5.28`**.
+- **Transitive fixes via targeted `npm update`** (undici, nanoid, dompurify, baseline-browser-mapping, js-yaml, fast-uri, brace-expansion, ip-address, browserslist, postcss-selector-parser, @humanfs/node, @babel/core, ws, qs, image-size). All are in-range, so **no new `overrides`**. A blanket `npm audit fix` was avoided because it also moves Storybook core to 10.6.0 (out-of-scope storybook group).
+- **Accept — `extract-zip` chain** (2 HIGH, dev-only: `@lhci/cli` → `lighthouse` → `puppeteer-core` → `@puppeteer/browsers` → `extract-zip`): no patched `extract-zip` exists; the only escape (`@puppeteer/browsers` 3.x / `puppeteer-core` 25) requires Node ≥ 22.12, and CI runs Node 20. Used only to unpack Chrome archives downloaded from Google's CDN in CI; never shipped.
+- **Defer — `esbuild` 0.27.x** (1 LOW, dev-only): fix needs Storybook ≥ 10.5, handled with the storybook group update.
+
+Result: production audit gate **0 vulnerabilities**; Dependabot 70 → 3 open (extract-zip ×2 accepted, esbuild ×1 deferred); full `npm audit` 13 (7 low, 6 high), all dev-only.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Stay on `next` 16.2.x (16.2.12) | Criticals GHSA-2xp9-vwfh-vxw4 / GHSA-p293-qw3h-jr36 are only patched in 16.3.3+ |
+| `isomorphic-dompurify` 4.x or `^3.19.0` | Requires / can drift to Node ≥ 22 (jsdom 30); CI is Node 20 |
+| Blanket `npm audit fix` | Bumps Storybook core to 10.6.0 while addons stay 10.3.3; out of scope |
+| Override `@puppeteer/browsers` → 3.x | Major API change and Node ≥ 22.12 requirement |
+| Merge the 12 Dependabot PRs individually | Each regenerates the lockfile with conflicting overlaps; one npm-10 regeneration is reviewable and CI-safe |
+
+### Consequences
+
+- Revisit `extract-zip` acceptance when CI moves to Node 22 (then `@lhci/cli`/`puppeteer` can move to a modern-tar based `@puppeteer/browsers`).
+- Remove the `~` pin on `isomorphic-dompurify` (→ `^4`) in the same Node 22 phase.
+- Sign-ins in flight during the deploy may fail once with an InvalidCheck error (check cookies minted before the upgrade lack the provider binding); users retry.
+- The E2E job still needs `AUTH_ENTRA_ISSUER`: with a config error, beta.32 returns `null` for every request, including the injected test session.
+- Verified: `npm ci` (npm 10 + 11 dry-run), prod audit gate, `npm run test:ci` (≥ 70% coverage), `npm run build`, `npm run build-storybook`, Playwright E2E.
+
+### Files Changed
+
+- `package.json` — `next`, `next-auth`, `isomorphic-dompurify`, `eslint-config-next`, `postcss`
+- `package-lock.json` — regenerated under npm 10
 
 ---
 
