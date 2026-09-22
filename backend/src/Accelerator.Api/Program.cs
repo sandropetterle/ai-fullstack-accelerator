@@ -60,7 +60,7 @@ builder.Services.AddApiVersioning(options =>
     options.AssumeDefaultVersionWhenUnspecified = true;
     options.ReportApiVersions = true;
     options.ApiVersionReader = new Asp.Versioning.UrlSegmentApiVersionReader();
-}).AddApiExplorer(options =>
+}).AddMvc().AddApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV";
     options.SubstituteApiVersionInUrl = true;

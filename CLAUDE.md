@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Fullstack Accelerator: Next.js 16 + ASP.NET Core 8 + Strapi 5 CMS with Clean Architecture.
+AI Fullstack Accelerator: Next.js 16 + ASP.NET Core 10 + Strapi 5 CMS with Clean Architecture.
 Example domain entity: **Article** (rename via `scripts/rename-entity.sh`).
 
 **Tech Stack:**
 - **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui, Sonner, react-markdown with rehype-sanitize
-- **Backend:** ASP.NET Core 8, Entity Framework Core 8, FluentValidation, API Versioning, Rate Limiting
+- **Backend:** ASP.NET Core 10, Entity Framework Core 10, FluentValidation, API Versioning, Rate Limiting
 - **Database:** SQLite (development), SQL Server (production)
 - **Deployment:** Azure Container Apps
 - **Testing:** Jest + React Testing Library (frontend), xUnit + Moq (backend), Playwright (E2E, cross-browser), Lighthouse CI, Chromatic

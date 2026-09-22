@@ -49,7 +49,7 @@ body:
       placeholder: |
         - OS: Windows 11
         - Node: 20.x
-        - .NET: 8.0.x
+        - .NET: 10.0.x
     validations:
       required: false
   - type: textarea

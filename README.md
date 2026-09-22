@@ -7,12 +7,12 @@
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![.NET 8](https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Strapi 5](https://img.shields.io/badge/Strapi-5-4945FF?logo=strapi&logoColor=white)](https://strapi.io)
 [![Azure](https://img.shields.io/badge/Azure-Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/products/container-apps)
 
-> **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 8 + Strapi 5 CMS + Azure IaC.
+> **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 10 + Strapi 5 CMS + Azure IaC.
 > Clone, rename your entity, and ship.
 
 ## What's Included
@@ -20,7 +20,7 @@
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui |
-| Backend | ASP.NET Core 8, Clean Architecture, Entity Framework Core 8, FluentValidation |
+| Backend | ASP.NET Core 10, Clean Architecture, Entity Framework Core 10, FluentValidation |
 | Auth | Auth.js v5 + any OIDC provider (Entra, Auth0, Cognito, Okta, Keycloak) |
 | CMS | Strapi 5 (optional, Docker-profiled) |
 | Database | SQLite (dev) / SQL Server (prod) |
@@ -77,7 +77,7 @@ Open [http://localhost:3000](http://localhost:3000) — you have a running full-
 ├── app/                    # Next.js App Router pages
 ├── components/             # React components (ui/, layout/, articles/, home/)
 ├── lib/                    # API client, types, CMS client, hooks
-├── backend/                # ASP.NET Core 8 (Clean Architecture)
+├── backend/                # ASP.NET Core 10 (Clean Architecture)
 │   └── src/
 │       ├── Accelerator.Api/          # Controllers, DTOs, Middleware, Validators
 │       ├── Accelerator.Core/         # Entities, Services, Interfaces, Enums

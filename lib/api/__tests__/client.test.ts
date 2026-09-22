@@ -334,7 +334,7 @@ describe('API Client', () => {
         mockResponse
       )
 
-      const error = await apiClient.get('/test').catch((e) => e)
+      const error = (await apiClient.get('/test').catch((e) => e)) as ApiError
       expect(error).toBeInstanceOf(ApiError)
       expect(error.statusCode).toBe(429)
       expect(error.message).toMatch(/too many requests/i)

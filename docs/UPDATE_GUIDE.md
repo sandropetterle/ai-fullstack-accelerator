@@ -103,8 +103,8 @@ The `Dockerfile` uses versioned base images. Dependabot tracks these and opens P
 To manually check for newer images:
 ```bash
 docker pull node:20-alpine
-docker pull mcr.microsoft.com/dotnet/aspnet:8.0-alpine
-docker pull mcr.microsoft.com/dotnet/sdk:8.0-alpine
+docker pull mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+docker pull mcr.microsoft.com/dotnet/sdk:10.0
 ```
 
 After updating a `FROM` line, rebuild and test locally:
@@ -153,24 +153,24 @@ Example: Node.js 20 → 22
 
 ## .NET Major Version Upgrade
 
-Example: .NET 8 → .NET 9
+Example: .NET 10 → .NET 12 (next LTS)
 
 1. Update `<TargetFramework>` in all `.csproj` files:
    ```xml
    <!-- Before -->
-   <TargetFramework>net8.0</TargetFramework>
+   <TargetFramework>net10.0</TargetFramework>
    <!-- After -->
-   <TargetFramework>net9.0</TargetFramework>
+   <TargetFramework>net12.0</TargetFramework>
    ```
 
 2. Update the `FROM` lines in `Dockerfile`:
    ```dockerfile
    # Before
-   FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
-   FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+   FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
+   FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
    # After
-   FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS base
-   FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+   FROM mcr.microsoft.com/dotnet/aspnet:12.0-alpine AS runtime
+   FROM mcr.microsoft.com/dotnet/sdk:12.0 AS build
    ```
 
 3. Update `.github/workflows/` if you pin a .NET version explicitly.
@@ -182,6 +182,11 @@ Example: .NET 8 → .NET 9
    ```
 
 5. Review the .NET release notes for breaking changes, especially in ASP.NET Core middleware, EF Core, and JSON serialization.
+
+6. EF Core: in `WebApplicationFactory` test setup, also remove `IDbContextOptionsConfiguration<TContext>`
+   alongside `DbContextOptions<TContext>` when swapping database providers (EF Core 9+ registers the
+   provider configuration on that service too). Then run
+   `dotnet ef migrations has-pending-model-changes` to confirm no new migration is needed.
 
 ---
 
@@ -211,8 +216,8 @@ severity, affected package, and recommended fix. Then apply the safe fixes autom
 
 **Check for deprecated API usage before a runtime upgrade:**
 ```
-I'm upgrading from .NET 8 to .NET 9. Scan backend/ for any APIs marked as obsolete in
-.NET 9 and suggest the replacement for each.
+I'm upgrading from .NET 10 to .NET 12. Scan backend/ for any APIs marked as obsolete in
+.NET 12 and suggest the replacement for each.
 ```
 
 ---
