@@ -1,8 +1,8 @@
 # Backend Architecture
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-09-22
 **Audience:** Backend Developers, Solutions Architects
-**Purpose:** Describe the ASP.NET Core 8 backend structure, Clean Architecture layers, patterns used, and links to the full API reference.
+**Purpose:** Describe the ASP.NET Core 10 backend structure, Clean Architecture layers, patterns used, and links to the full API reference.
 
 ---
 

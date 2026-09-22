@@ -1,10 +1,10 @@
 # ============================================================================
 # Backend API Dockerfile - Multi-stage build for optimal size
-# AI Fullstack Accelerator - ASP.NET Core 8.0
+# AI Fullstack Accelerator - ASP.NET Core 10.0
 # ============================================================================
 
 # Stage 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:a9330090b730c2abde8f3f43b3d1e24e4b8cba028de7bab1a7fdcd50cb7a3b7e AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:35d40304542c8689331f8cab17c65926cdf48fe711e289321d71924b230a7d29 AS build
 WORKDIR /src
 
 # Copy project files
@@ -25,17 +25,15 @@ RUN dotnet build "Accelerator.Api.csproj" -c Release -o /app/build
 RUN dotnet publish "Accelerator.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Runtime (Alpine — smaller image, BusyBox wget for healthcheck)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine@sha256:354c2fcfb3c23abc60d98f0380cdb403fba844a62a123b6343a8c9611209995c AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095 AS runtime
 WORKDIR /app
 
 # Create non-root user (Alpine syntax)
-RUN addgroup -S appuser && adduser -S appuser -G appuser
+RUN addgroup -S appuser && adduser -S appuser -G appuser && chown appuser:appuser /app
 
-# Copy published app from build stage
-COPY --from=build /app/publish .
-
-# Set ownership
-RUN chown -R appuser:appuser /app
+# Copy published app from build stage, setting ownership directly (avoids a
+# duplicate chown layer that otherwise doubles the size added by this copy)
+COPY --from=build --chown=appuser:appuser /app/publish .
 
 # Switch to non-root user
 USER appuser

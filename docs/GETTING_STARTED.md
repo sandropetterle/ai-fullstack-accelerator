@@ -9,7 +9,7 @@ A complete guide for getting the AI Fullstack Accelerator running from a fresh c
 | Tool | Version | Notes |
 |------|---------|-------|
 | Node.js | 20+ | `node --version` to check |
-| .NET SDK | 8.0+ | `dotnet --version` to check |
+| .NET SDK | 10.0+ | `dotnet --version` to check |
 | Git | Any | |
 | Docker Desktop | Any | Optional — only needed if you want SQL Server or the CMS locally; SQLite works out of the box |
 
