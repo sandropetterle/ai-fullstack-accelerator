@@ -9,7 +9,9 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Accelerator.Api.Tests.IntegrationTests;
 
@@ -27,10 +29,11 @@ public class ArticleEndpointsTests : IClassFixture<WebApplicationFactory<Program
         {
             builder.ConfigureServices(services =>
             {
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                if (descriptor != null)
-                    services.Remove(descriptor);
+                // EF Core 9+: AddDbContext also registers IDbContextOptionsConfiguration<TContext>,
+                // which carries the UseSqlite/UseSqlServer call. Remove both, or two providers end up
+                // registered ("Only a single database provider can be registered").
+                services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+                services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
 
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseInMemoryDatabase(DatabaseName));

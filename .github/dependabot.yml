@@ -67,6 +67,9 @@ updates:
       dotnet-servicing:
         patterns:
           - "Microsoft.*"
+        exclude-patterns:
+          - "Microsoft.EntityFrameworkCore*"
+          - "Microsoft.NET.Test.Sdk"
       ef-core:
         patterns:
           - "Microsoft.EntityFrameworkCore*"
@@ -101,6 +104,11 @@ updates:
     directory: "/backend"
     schedule:
       interval: "monthly"
+    ignore:
+      - dependency-name: "dotnet/sdk"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "dotnet/aspnet"
+        update-types: ["version-update:semver-major"]
 
   # Docker — CMS
   - package-ecosystem: "docker"

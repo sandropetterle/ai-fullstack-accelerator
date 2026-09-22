@@ -125,13 +125,13 @@ export default async function AboutPage() {
               <Code2 className="h-8 w-8 text-primary mb-2" />
               <CardTitle>Modern Stack</CardTitle>
               <CardDescription>
-                Next.js 16 App Router with ASP.NET Core 8 Clean Architecture backend
+                Next.js 16 App Router with ASP.NET Core 10 Clean Architecture backend
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• Next.js App Router</li>
-                <li>• ASP.NET Core 8</li>
+                <li>• ASP.NET Core 10</li>
                 <li>• Entity Framework Core</li>
                 <li>• TypeScript throughout</li>
               </ul>
@@ -220,7 +220,7 @@ export default async function AboutPage() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• .NET 8+ patterns</li>
+                <li>• .NET 10+ patterns</li>
                 <li>• Next.js 16 best practices</li>
                 <li>• Azure cloud patterns</li>
                 <li>• Modern TypeScript</li>
@@ -253,7 +253,7 @@ export default async function AboutPage() {
               <div>
                 <h3 className="font-semibold mb-3">Backend</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• ASP.NET Core 8.0</li>
+                  <li>• ASP.NET Core 10.0</li>
                   <li>• Entity Framework Core</li>
                   <li>• Clean Architecture</li>
                   <li>• Azure SQL Database</li>

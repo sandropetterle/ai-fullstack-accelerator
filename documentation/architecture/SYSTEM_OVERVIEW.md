@@ -1,6 +1,6 @@
 # System Overview
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-09-22
 **Audience:** Solutions Architect, all developers, new contributors
 **Purpose:** High-level overview of the AI Fullstack Accelerator system — what it is, what it does, and how its major components interact.
 
@@ -41,9 +41,9 @@ The platform demonstrates enterprise-grade development practices (Clean Architec
 
 | Technology | Purpose |
 |-----------|---------|
-| ASP.NET Core 8 (Web API) | RESTful API server |
-| C# 12 | Implementation language |
-| Entity Framework Core 8 | ORM with code-first migrations |
+| ASP.NET Core 10 (Web API) | RESTful API server |
+| C# 14 | Implementation language |
+| Entity Framework Core 10 | ORM with code-first migrations |
 | FluentValidation | DTO and query validation |
 | xUnit + Moq | Testing framework |
 
@@ -109,7 +109,7 @@ flowchart TD
     %% ── Azure Container Apps ────────────────────────────────────────────────
     subgraph ACA["☁️  Azure Container Apps Environment"]
         FE["⚡ Next.js 16<br/>App Router · ISR · Auth.js v5"]
-        API["🔧 ASP.NET Core 8<br/>REST API · JWT · Rate Limiting"]
+        API["🔧 ASP.NET Core 10<br/>REST API · JWT · Rate Limiting"]
         CMS["📝 Strapi 5<br/>Headless CMS · Webhook (optional)"]
     end
 

@@ -1,6 +1,6 @@
 # Security Overview
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-09-22
 **Audience:** Security Engineers, Solutions Architects, Backend Developers, Infrastructure Engineers
 **Purpose:** Document the security architecture, authentication flow, protection measures against common vulnerabilities, and security headers configuration.
 
@@ -232,7 +232,7 @@ Applied to all Next.js responses via `next.config.mjs`:
 
 - All 3 Dockerfiles use multi-stage builds
 - All `FROM` lines SHA-pinned to immutable digest — mutable tag kept as a comment; Dependabot Docker ecosystem keeps pins current
-- Backend runtime uses `aspnet:8.0-alpine` — minimal attack surface
+- Backend runtime uses `aspnet:10.0-alpine` — minimal attack surface
 - All containers run as non-root users (`appuser`, `nextjs`, `strapi`)
 - Ports <1024 require root; backend uses port 8080 inside container
 - Container images stored in Azure Container Registry with RBAC access
