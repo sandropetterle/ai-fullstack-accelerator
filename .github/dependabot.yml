@@ -43,8 +43,8 @@ updates:
       # does not yet support TypeScript 7. Defer until typescript-eslint adds support.
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
-      # @types/node should not run ahead of the Node runtime (engines >=24.15, Node 24 LTS);
-      # hold further majors until the runtime moves
+      # Runtime is Node 24 LTS (engines >=24.15); hold @types/node at 25.x rather than
+      # letting it drift further ahead of the runtime
       - dependency-name: "@types/node"
         versions: [">=26.0.0"]
 
