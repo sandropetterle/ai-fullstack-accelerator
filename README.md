@@ -80,7 +80,7 @@ To use it:
 2. Set `STRAPI_URL` and `STRAPI_API_TOKEN` in `.env.local` (see `.env.example`).
 3. Start it alongside the rest of the stack with `docker compose --profile cms up -d` (see [Decision 3](documentation/decisions/TECHNICAL_DECISIONS_LOG.md)).
 
-The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStrapi()` catches network/HTTP failures and throws `CmsUnavailableError`; CMS-driven sections (home page hero, featured content, static page copy) catch that error and fall back to hardcoded content. So the app runs fine with `STRAPI_URL` unset/unreachable — you only need to scaffold and run Strapi if you want to manage that content from a CMS instead of hardcoding it. See [CMS Removal Guide](docs/CMS_REMOVAL_GUIDE.md) if you don't want the integration at all.
+The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStrapi()` catches network/HTTP failures and throws `CmsUnavailableError`; `safeFetch()` in `lib/cms/queries.ts` catches it and returns hardcoded fallbacks (nav/footer, pages, labels). So the app runs fine with `STRAPI_URL` unset/unreachable — you only need to scaffold and run Strapi if you want to manage that content from a CMS instead of hardcoding it. See [CMS Removal Guide](docs/CMS_REMOVAL_GUIDE.md) if you don't want the integration at all.
 
 ## Project Structure
 
@@ -95,7 +95,7 @@ The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStr
 │       ├── Accelerator.Core/         # Entities, Services, Interfaces, Enums
 │       ├── Accelerator.Data/         # Repositories, DbContext, Migrations
 │       └── Accelerator.Infrastructure/ # AppInsights, Caching, Rate Limiting
-├── cms/                    # Dockerfile only — scaffold Strapi 5 yourself, see docs/
+├── cms/                    # Dockerfile only — scaffold Strapi 5 yourself, see Optional: Strapi CMS above
 ├── infrastructure/         # Azure Bicep IaC
 ├── deployment/             # Deployment scripts and guides
 ├── docs/                   # Accelerator guides (getting started, tech swap, etc.)

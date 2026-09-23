@@ -53,6 +53,8 @@ For the full component schema reference (field tables, dependency map, reuse gui
 
 ## 4. Local Development
 
+> **Scaffold first.** The repo commits only `cms/Dockerfile`, not the Strapi app. Run `npx create-strapi@latest cms` before the commands below (see README's "Optional: Strapi CMS").
+
 ```bash
 # Start Strapi + MySQL locally (requires --profile cms; they don't start by default)
 docker compose --profile cms up -d
@@ -190,8 +192,8 @@ These are hard-won lessons from CMS deployment. Ignoring them will cause cryptic
 
 | File | Purpose |
 |------|---------|
-| `cms/` | Strapi 5 project root |
-| `cms/data/seed.ts` | Seeds all hardcoded content into Strapi |
+| `cms/` | Strapi 5 project root (bring your own; only `Dockerfile` is committed) |
+| `cms/data/seed.ts` | Seeds all hardcoded content into Strapi (not committed) |
 | `cms/Dockerfile` | Production container build |
 | `deployment/scripts/provision-cms.ps1` | Provisions Azure MySQL + Container App + Blob Storage |
 | `.github/workflows/cms-container-deploy.yml` | CI/CD workflow for CMS deployment |

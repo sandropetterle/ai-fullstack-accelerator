@@ -21,7 +21,7 @@ Each content type and component in your Strapi instance should be documented her
 
 ## Content Types
 
-The accelerator ships with these Strapi content types (configured in `cms/src/api/`):
+The expected Strapi content types (create them in `cms/src/api/` after scaffolding):
 
 | Content Type | Purpose |
 |-------------|---------|

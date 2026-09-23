@@ -19,7 +19,7 @@
 
 ### Context / Problem
 
-An audit of the committed tree found `cms/` contains only `Dockerfile` and `.dockerignore` — there is no Strapi application source (no `package.json`, no `src/`). Despite this, README.md, CLAUDE.md, and `documentation/cms-components/COMPONENT_INDEX.md` described Strapi 5 as something the accelerator "ships," including paths like `cms/src/api/` and `cms/src/components/` that don't exist in the repo. The `cms/Dockerfile`'s `COPY package*.json ./` cannot succeed against the committed tree for the same reason. Separately, Decision 10's "Files Changed" and "Verified" sections state `cms/Dockerfile` was updated to `node:24-alpine` and that "Docker builds of the root and `cms/` Dockerfiles" were verified — that verification could only have exercised the `deps` stage's `COPY package*.json ./` against a locally-scaffolded Strapi app, not the tree as committed, which has no manifest to copy. The claim is misleading as written.
+An audit of the committed tree found `cms/` contains only `Dockerfile` and `.dockerignore` — there is no Strapi application source (no `package.json`, no `src/`). Despite this, README.md, CLAUDE.md, and `documentation/cms-components/COMPONENT_INDEX.md` described Strapi 5 as something the accelerator "ships," including paths like `cms/src/api/` and `cms/src/components/` that don't exist in the repo. `cms/Dockerfile` cannot build against the committed tree: there is no `package.json`, so `RUN npm run build` fails. Separately, Decision 10's "Files Changed" and "Verified" sections state `cms/Dockerfile` was updated to `node:24-alpine` and that "Docker builds of the root and `cms/` Dockerfiles" were verified — that claim cannot be true of the committed tree.
 
 ### Decision
 
@@ -258,7 +258,7 @@ Node 20 removal from hosted runners makes this non-optional; Node 24 is the curr
 - **Update (2026-09-23):** PR #75 merged (isomorphic-dompurify -> `^4.3.0`); the extract-zip/`@lhci/cli` chain remains open and unresolved upstream — see Decision 13.
 - Verified: `node -v` (24.x locally), `npx -y npm@10 ci`, `npm audit --omit=dev --audit-level=high`, `npm run test:ci`, `npm run build`, `npm run build-storybook`, `npm run lint`, Docker builds of the root and `cms/` Dockerfiles, and YAML-parsed every workflow plus `dependabot.yml`.
 
-  **Update (2026-09-23):** the "Docker builds of ... the `cms/` Dockerfile" verification claim above cannot be true from the committed tree — `cms/` has never carried a Strapi app, only `Dockerfile` and `.dockerignore`, so `COPY package*.json ./` in the `deps` stage has nothing to copy. That build was necessarily run against a locally-scaffolded Strapi app, not what's in the repo. See Decision 14, which descopes Strapi to an optional, bring-your-own integration in the docs.
+  **Update (2026-09-23):** the "Docker builds of ... the `cms/` Dockerfile" verification claim above cannot be true from the committed tree — `cms/` has never carried a Strapi app, only `Dockerfile` and `.dockerignore`, so the image cannot build from the committed tree (no `package.json` for `npm run build`). How that verification was run is unknown. See Decision 14, which descopes Strapi to an optional, bring-your-own integration in the docs.
 
 ### Files Changed
 
