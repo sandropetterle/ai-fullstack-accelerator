@@ -29,11 +29,11 @@ export default function ArticlesError({
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              We couldn't load the articles from our server. This might be because:
+              We couldn&apos;t load the articles from our server. This might be because:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
               <li>The backend API server is not running</li>
-              <li>There's a network connectivity issue</li>
+              <li>There&apos;s a network connectivity issue</li>
               <li>The server is temporarily unavailable</li>
             </ul>
             {error.message && (

@@ -28,6 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme | null
     if (stored === 'light' || stored === 'dark') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrates state from a browser-only API (localStorage) unavailable during SSR/first render
       setThemeState(stored)
     }
   }, [])
@@ -39,6 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
 
     root.classList.toggle('dark', isDark)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resolvedTheme mirrors browser-only APIs (matchMedia/DOM) unavailable during SSR/first render
     setResolvedTheme(isDark ? 'dark' : 'light')
 
     if (theme === 'system') {

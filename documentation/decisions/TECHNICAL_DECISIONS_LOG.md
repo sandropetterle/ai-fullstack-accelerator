@@ -4,9 +4,65 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **8 active decisions | 0 archived**
+> **9 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 9: Migrate ESLint to Flat Config for Next.js 16; scope the `ajv` override
+
+**Date:** 2026-09-22
+**Title:** Replace legacy `.eslintrc.json` + `next lint` with `eslint.config.mjs` + `eslint .`; run lint in CI
+**Category:** Testing
+**Status:** Active
+
+### Context / Problem
+
+Next.js 16 removed `next lint` entirely, so `npm run lint` (which called it) failed on master. The repo's ESLint config was still the legacy `.eslintrc.json` format. No CI job ran lint, so this had gone unnoticed.
+
+### Decision
+
+- Replaced `.eslintrc.json` with `eslint.config.mjs`, built from `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript` (the flat-config exports Next.js 16 documents), plus the existing `eslint-plugin-security` rule overrides carried over verbatim.
+- Changed the `lint` script from `next lint` to `eslint .`, with `globalIgnores` covering Next's defaults (`.next/**`, `out/**`, `build/**`, `next-env.d.ts`) plus project-specific build/output dirs (`node_modules`, `coverage`, `storybook-static`, `playwright-report`, `test-results`, `backend`, `cms`).
+- Added a `Lint` step (`npm run lint`) to the `frontend-tests` job in `.github/workflows/test.yml`, right after `npm ci`.
+- Scoped the pre-existing blanket `"ajv": "^8.8.2"` `package.json` override: added nested overrides so `eslint` and `@eslint/eslintrc` keep resolving their own `ajv ^6.14.0` dependency, while every other consumer (schema-utils, ajv-formats, etc.) still gets the forced `^8.8.2+`.
+- Fixed the real lint errors the flat config's stricter rule set surfaced (see below); left pre-existing warnings (unused vars, `exhaustive-deps`, unsafe-regex, `no-location-assign-relative-destination`) as warnings, matching prior severity.
+
+### Rationale
+
+The Next.js docs (`/docs/app/api-reference/config/eslint`) prescribe exactly this `eslint.config.mjs` shape as the v16 replacement for `next lint`; no codemod was needed since the config was small enough to hand-migrate. `eslint` stayed on the current major (9.x) — Dependabot is configured to ignore ESLint v10 bumps, so following that same policy here keeps the two in sync.
+
+The blanket `ajv` override (present since the repository's initial commit, with no recorded reason in git history) turned out to be fundamentally incompatible with any ESLint version: both `eslint` and `@eslint/eslintrc` hard-depend on `ajv ^6.14.0` for their internal JSON-schema config validation, and `ajv` 8.x removed the `missingRefs` option those packages call internally (`TypeError: Cannot set properties of undefined (setting 'defaultMeta')` / `Cannot find module 'ajv/lib/refs/json-schema-draft-04.json'`). Forcing `ajv` globally to 8.x therefore broke ESLint outright regardless of flat vs. legacy config — this had simply never been caught because lint was never run. Scoping the override per-parent-package (`npm overrides` supports this) keeps the original security intent (non-ESLint consumers still get the patched `ajv`) without breaking ESLint.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| `npx @eslint/migrate-config .eslintrc.json` auto-generated `FlatCompat` shim | Keeps the legacy plugin-resolution layer (`@eslint/eslintrc`'s `FlatCompat`) as a permanent dependency instead of adopting the native flat exports Next.js now documents; more code to maintain for no benefit given how small this config already was |
+| Downgrade the `ajv` override version instead of scoping it | Tried `8.17.1` and `8.12.0` first — both still ship the newer internal API `eslint`/`@eslint/eslintrc` don't call the way their bundled `ajv ^6` expects; the incompatibility is a major-version API mismatch, not a patch-level regression, so no 8.x version fixes it |
+| Remove the `ajv` override entirely | Would silently re-expose the transitive `ajv` vulnerability in webpack/schema-utils consumers that the override was added to patch |
+
+### Consequences
+
+- `npm run lint` now runs and gates CI (`frontend-tests` job); a future lint regression will fail PRs instead of going unnoticed.
+- The `ajv` override is now two entries instead of one; anyone touching it in future dependency work needs to keep the `eslint` / `@eslint/eslintrc` nested overrides in sync with whatever `ajv` major those packages require.
+- `react-hooks` (bundled via `eslint-config-next` 16) added a new `set-state-in-effect` rule; the five legitimate browser-API hydration/debounce call sites it flagged got a scoped `eslint-disable-next-line` with a comment, not a project-wide rule disable.
+
+### Files Changed
+
+- `eslint.config.mjs` — new flat config (replaces `.eslintrc.json`, which was deleted)
+- `package.json` — `lint` script -> `eslint .`; scoped `ajv` overrides for `eslint` / `@eslint/eslintrc`
+- `.github/workflows/test.yml` — added `Lint` step to `frontend-tests`
+- `components/providers/ThemeProvider.tsx`, `hooks/useRecentlyViewed.ts`, `hooks/useSavedSearches.ts`, `hooks/useSearchSuggestions.ts` — scoped `react-hooks/set-state-in-effect` disables on browser-API hydration/debounce `setState` calls
+- `app/articles/error.tsx` — escaped unescaped apostrophes (`react/no-unescaped-entities`)
+- `jest.setup.ts` — replaced `as any` with `as unknown as typeof IntersectionObserver`/`ResizeObserver`
+- `tailwind.config.ts`, `__tests__/accessibility/article-form.a11y.test.tsx`, `components/articles/__tests__/ArticleForm.test.tsx` — scoped `no-require-imports` disables where `require()` is structurally necessary
+- 9 test files' `jest.mock('next/link', ...)` factories — named the returned mock component (`function MockLink(...)`) instead of an anonymous arrow, satisfying `react/display-name`
+
+### Tests Added
+
+- None (lint-only change); existing Jest suite (`npm run test:ci`) and `tsc --noEmit` re-verified green after the migration.
 
 ---
 

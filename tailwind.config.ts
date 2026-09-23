@@ -84,6 +84,7 @@ const config: Config = {
       },
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- tailwindcss-animate has no ESM entry point
   plugins: [require("tailwindcss-animate")],
 };
 

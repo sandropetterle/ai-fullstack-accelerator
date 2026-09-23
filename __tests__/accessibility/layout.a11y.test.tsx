@@ -6,9 +6,10 @@ import type { Article } from '@/lib/types/article'
 expect.extend(toHaveNoViolations)
 
 jest.mock('next/link', () => {
-  return ({ children, href, ...rest }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
-    <a href={href} {...rest}>{children}</a>
-  )
+  function MockLink({ children, href, ...rest }: { children: React.ReactNode; href: string; [key: string]: unknown }) {
+    return <a href={href} {...rest}>{children}</a>
+  }
+  return MockLink
 })
 
 const mockArticle: Article = {
