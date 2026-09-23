@@ -88,6 +88,19 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # NEXT_PUBLIC_* vars are baked into client bundles at build time.
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:5255/api
+          NEXT_PUBLIC_API_TIMEOUT: 30000
+          # Auth.js v5 calls auth() in server components — next build fails without this.
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'test-secret-for-e2e' }}
+          AUTH_TRUST_HOST: true
+
       - name: Security audit (production deps)
         run: npm audit --omit=dev --audit-level=high
 

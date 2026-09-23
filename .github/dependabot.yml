@@ -39,6 +39,10 @@ updates:
       # next-auth v5 is intentionally on beta — don't auto-bump to v4 stable
       - dependency-name: "next-auth"
         update-types: ["version-update:semver-major"]
+      # typescript-eslint's peer range (>=4.8.4 <6.1.0 as of typescript-eslint 8.70.1)
+      # does not yet support TypeScript 7. Defer until typescript-eslint adds support.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
 
   # CMS npm (cms/)
   - package-ecosystem: "npm"
