@@ -1,0 +1,27 @@
+# ============================================================================
+# .dockerignore for the backend (ASP.NET Core) build context = backend/
+# Keeps secrets, local artefacts, and test/IDE noise out of the image.
+# ============================================================================
+
+# Version control / editor / tooling
+.git
+.claude
+.vscode
+.idea
+*.log
+
+# .NET build artefacts (rebuilt inside the container)
+**/bin
+**/obj
+
+# Tests (not needed in the published image)
+tests
+
+# Env files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Docs not needed at runtime
+docs
+documentation

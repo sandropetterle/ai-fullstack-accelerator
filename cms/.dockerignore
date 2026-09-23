@@ -1,0 +1,26 @@
+# ============================================================================
+# .dockerignore for the CMS (Strapi) build context = cms/
+# Keeps secrets and local artefacts out of the image.
+# ============================================================================
+
+# Version control / editor / tooling
+.git
+.claude
+.vscode
+.idea
+*.log
+
+# Node
+node_modules
+.tmp
+build
+dist
+
+# Env files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Docs not needed at runtime
+docs
+documentation
