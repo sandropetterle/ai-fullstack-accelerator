@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=24"
+    "node": ">=24.15.0"
   },
   "overrides": {
     "ajv": "^8.18.0",
