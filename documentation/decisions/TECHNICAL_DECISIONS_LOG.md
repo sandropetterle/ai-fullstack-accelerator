@@ -426,7 +426,7 @@ Move every backend project to `net10.0` in one PR, superseding the six Dependabo
 ### Consequences
 
 - Runtime image grows because EF Core 10's SQLite native assets ship for all RIDs; the Dockerfile uses `COPY --chown` to avoid duplicating the publish layer. A RID-specific publish is a possible follow-up.
-- Pre-existing, not introduced here: the single migrations set is SQLite-typed. Applying it to SQL Server failed on EF 8 (`InvalidCastException` Guid->string); on EF 10 it fails earlier with `PendingModelChangesWarning`. SQL Server needs its own provider-specific migrations assembly. Tracked as a follow-up.
+- Pre-existing, not introduced here: the single migrations set is SQLite-typed. Applying it to SQL Server failed on EF 8 (`InvalidCastException` Guid->string); on EF 10 it fails earlier with `PendingModelChangesWarning`. SQL Server needs its own provider-specific migrations assembly. Tracked as a follow-up. Resolved by Decision 15.
 - Developers need the .NET 10 SDK and `dotnet-ef` 10.x (`dotnet tool update -g dotnet-ef --version 10.0.12`).
 - Verified: build 0 warnings; 109/109 tests with coverage; vulnerability audit clean; `dotnet ef database update` on SQLite; API smoke (health, articles, versioned routes, swagger); Docker build and run on `aspnet:10.0-alpine`.
 

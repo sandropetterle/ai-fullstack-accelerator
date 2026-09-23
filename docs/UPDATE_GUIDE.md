@@ -186,7 +186,7 @@ Example: .NET 10 → .NET 12 (next LTS)
 6. EF Core: in `WebApplicationFactory` test setup, also remove `IDbContextOptionsConfiguration<TContext>`
    alongside `DbContextOptions<TContext>` when swapping database providers (EF Core 9+ registers the
    provider configuration on that service too). Then run
-   `dotnet ef migrations has-pending-model-changes` to confirm no new migration is needed.
+   `dotnet ef migrations has-pending-model-changes` for both migration sets (see README "Database Migrations") to confirm no new migration is needed.
 
 ---
 
