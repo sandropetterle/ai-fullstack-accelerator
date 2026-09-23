@@ -4,9 +4,61 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **9 active decisions | 0 archived**
+> **10 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 10: Standardise on Node.js 24 LTS and gate deploy workflows
+
+**Date:** 2026-09-22
+**Title:** Move CI/Docker off Node 20 (EOL, removed from hosted runners 2026-09-16) onto Node 24 LTS, and fix deploy workflows that silently never ran
+**Category:** Infrastructure
+**Status:** Active
+
+### Context / Problem
+
+Node 20 reached end-of-life and was removed from GitHub-hosted runner images on 2026-09-16, so every workflow pinned to `node-version: '20'` (and every `node:20-alpine` Dockerfile stage) was running on borrowed time. Separately, the three `*-container-deploy.yml` workflows trigger on `push: branches: [main]`, but the repository's default branch is `master` — they had never once run on a normal push, only via manual `workflow_dispatch`. Bundled into the same PR because it touches the same workflow files: two CI hygiene gaps (missing `CODECOV_TOKEN`, `e2e/.auth/*.png` screenshots silently dropped by the hidden-file filter) and Dependabot config that let 5 stale github-actions PRs sit queued behind the ecosystem's default 5-PR limit.
+
+### Decision
+
+- **Node 24 everywhere:** root `Dockerfile` and `cms/Dockerfile` -> `node:24-alpine` (digest-pinned via `docker buildx imagetools inspect`); `node-version: '20'` -> `'24'` in `test.yml` (frontend-tests, e2e-tests) and `frontend-container-deploy.yml` (run-tests, lhci, chromatic); `package.json` `engines.node` -> `">=24.15.0"` (new field); new `.nvmrc` (`24.15`). Docs updated: `.github/CONTRIBUTING.md` ("Node.js 24.15+"), `docs/UPDATE_GUIDE.md` (its worked example now shows a 24 -> 26 upgrade).
+- **isomorphic-dompurify:** loosened `~3.19.0` -> `^3.23.0` (still within the 3.x line, not the 4.x major). This is *not* a Node-floor-neutral bump: 3.20 already moved the dependency chain to jsdom 30 / undici 8, which requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — so `engines.node`/`.nvmrc` above were raised to `24.15.0`/`24.15` specifically to satisfy this, not just "Node 24". Dependabot PR #75 separately bumps to `4.3.0` (a semver-major that the project's own release notes admit should have been a major given this same Node-floor change), which is a materially different change; left open for separate review rather than duplicated here. Verification note: local `npm test`/`npm run build` ran on Node 24.13.0 (below the 24.15 floor — non-fatal `EBADENGINE` warnings only), while the Docker image and CI's `setup-node '24'` resolve to Node 24.21.x, which satisfies it.
+- **extract-zip (2 Dependabot alerts, dev-only via `@lhci/cli` -> `lighthouse` -> `puppeteer-core`):** re-checked under Node 24. `@lhci/cli` latest on the registry is still `0.15.1` (unchanged) and pins `lighthouse` to the exact version `12.6.1`, which pins `puppeteer-core ^24.10.0` (the last line still using `extract-zip` to unpack downloaded Chrome archives). Standalone `lighthouse@latest` (13.5.0) has moved to `puppeteer-core ^25.9.0` (Node >=22.12, satisfied by Node 24) which drops `extract-zip`, but `@lhci/cli` has not picked up a lighthouse 13 release. Forcing it via an `overrides` entry would jump `@lhci/cli`'s internal lighthouse dependency across a major version with no verification that `@lhci/cli`'s CLI/API usage still works against it. **Not applied** — remains an accepted dev-only risk (see Decision 7); revisit when `@lhci/cli` ships a release built on lighthouse >=13.
+- **Deploy workflow trigger fix:** `push.branches` changed from `[main]` to `[master]` in all three `*-container-deploy.yml` files (they already had `workflow_dispatch`). To keep this safe for forks/template users who haven't provisioned Azure, every Azure-touching job (`build-and-push`, `deploy`, `healthcheck`, `tag-latest`, `rollback`) is now gated with `if: vars.AZURE_DEPLOY_ENABLED == 'true'` (combined with the existing `success()`/`failure()` conditions where present). In `frontend-container-deploy.yml`, the same gate was also added to `lhci` and `chromatic` (they don't touch Azure, but once the trigger runs on every `master` push they'd otherwise fail with no `lighthouserc`/Chromatic project configured); `deploy` already `needs: [build-and-push, lhci, chromatic]`, so with the variable unset every job in the chain is skipped as a unit. Unset or `false`, these jobs are **skipped** (neutral), not failed. Documented as a new "Deploy Gate" section in `.github/REPO_VARIABLES.md`.
+- **CI hygiene bundled in:** added `token: ${{ secrets.CODECOV_TOKEN }}` to both `codecov-action` steps in `test.yml` (secret does not currently exist in the repo — see Consequences); added `include-hidden-files: true` to the `e2e/.auth/*.png` screenshot upload step (the directory is dot-prefixed and was silently excluded by the default hidden-file filter).
+- **Dependabot config:** `docker` ecosystem entries for `/` and `/cms` now `ignore` semver-major updates to the `node` image (new LTS majors are adopted deliberately, as in this decision); added an `npm-minor-patch` group (`update-types: [minor, patch]`) as the last/catch-all group in both npm directories, after the existing named groups (storybook/testing/types, strapi) so those keep first-match priority; added a `github-actions` group so action bumps land as one PR instead of one-per-action (this is also what was silently capping the queue at 5 PRs). NuGet config left untouched.
+
+### Rationale
+
+Node 20 removal from hosted runners makes this non-optional; Node 24 is the current LTS (Active LTS since 2025-10, Maintenance from 2026-10, EOL 2028-04). Gating deploy on a repo variable rather than deleting/disabling the workflows keeps them functional for the primary repo (once `AZURE_DEPLOY_ENABLED=true` is set) while making the accelerator safe to fork/template — a design goal already established by the "Production" GitHub environment gate on `deploy`.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Jump isomorphic-dompurify straight to `^4` (matching PR #75) | Out of scope for this PR per the task brief; PR #75 already covers it and should be reviewed on its own, not silently duplicated |
+| Force `overrides.lighthouse` to `^13` to clear extract-zip now | `@lhci/cli` 0.15.1 was built and tested against lighthouse 12's API; a major-version override with no upstream release backing it is exactly the kind of "apply only if non-breaking" case that isn't verifiable without deep testing of `@lhci/cli` internals |
+| Delete/disable the deploy workflows instead of gating them | They are correct and needed once Azure is provisioned; gating preserves them for the primary deployment while keeping forks green |
+| Leave deploy workflows targeting `main` | They would continue to silently never run on push, defeating their purpose |
+
+### Consequences
+
+- **User action required:** create the `CODECOV_TOKEN` secret (`gh secret list` shows none exists) or coverage uploads keep failing silently (`fail_ci_if_error: false` already masks this). Set the `AZURE_DEPLOY_ENABLED` repository variable to `true` (plus the existing Azure secrets/variables in `REPO_VARIABLES.md`) to turn deploys back on for the primary repo.
+- Revisit the isomorphic-dompurify `^4` major and the extract-zip/`@lhci/cli` chain together — both were deferred for the same "no verified-safe path yet" reason, and Node 24 now satisfies the Node-floor requirement for both if/when upstream catches up.
+- Follow-up: PR #75 (isomorphic-dompurify -> 4.3.0) needs its own review; it is not superseded by this change.
+- Verified: `node -v` (24.x locally), `npx -y npm@10 ci`, `npm audit --omit=dev --audit-level=high`, `npm run test:ci`, `npm run build`, `npm run build-storybook`, `npm run lint`, Docker builds of the root and `cms/` Dockerfiles, and YAML-parsed every workflow plus `dependabot.yml`.
+
+### Files Changed
+
+- `Dockerfile`, `cms/Dockerfile` — `node:24-alpine` (digest-pinned)
+- `.github/workflows/test.yml` — `node-version: '24'` (x2), `CODECOV_TOKEN` (x2), `include-hidden-files: true`
+- `.github/workflows/frontend-container-deploy.yml`, `backend-container-deploy.yml`, `cms-container-deploy.yml` — `node-version: '24'` (frontend only), trigger branch `master`, `AZURE_DEPLOY_ENABLED` gate on Azure-touching jobs plus `lhci`/`chromatic` in `frontend-container-deploy.yml`
+- `package.json` — `engines.node`, `isomorphic-dompurify`
+- `.nvmrc` — new file
+- `.github/CONTRIBUTING.md`, `docs/UPDATE_GUIDE.md`, `.github/REPO_VARIABLES.md` — Node 24 mentions, Deploy Gate section
+- `.github/dependabot.yml` — docker `node` major ignore, `npm-minor-patch` groups, `github-actions` group
 
 ---
 

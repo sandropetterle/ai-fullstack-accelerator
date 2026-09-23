@@ -10,7 +10,7 @@ participating, you agree to uphold it.
 
 ## Getting started
 
-Prerequisites: Node.js 20+, the .NET 10 SDK, and (optionally) Docker for SQL
+Prerequisites: Node.js 24.15+, the .NET 10 SDK, and (optionally) Docker for SQL
 Server and the Strapi CMS.
 
 ```bash
