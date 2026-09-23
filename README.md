@@ -58,6 +58,27 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) — you have a running full-stack application.
 
+## Database Migrations
+
+The API uses SQLite when no `ConnectionStrings:DefaultConnection` is configured (local dev) and SQL Server otherwise. Each provider has its own EF Core migration set ([Decision 15](documentation/decisions/TECHNICAL_DECISIONS_LOG.md)), so add every model change to **both**:
+
+```bash
+# SQLite (dev default) -> backend/src/Accelerator.Data/Migrations
+dotnet ef migrations add MyChange --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
+
+# SQL Server -> backend/src/Accelerator.Data.SqlServer/Migrations
+# The connection string after `--` is what makes the API select the SQL Server provider.
+dotnet ef migrations add MyChange --project backend/src/Accelerator.Data.SqlServer --startup-project backend/src/Accelerator.Api \
+  -- --ConnectionStrings:DefaultConnection "Server=localhost,1433;Database=AcceleratorDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+
+# Apply: same --project / connection-string pairing, with `database update`
+dotnet ef database update --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
+dotnet ef database update --project backend/src/Accelerator.Data.SqlServer --startup-project backend/src/Accelerator.Api \
+  -- --ConnectionStrings:DefaultConnection "<SQL Server connection string>"
+```
+
+The SQL Server connection string above matches the `sqlserver` service in `docker-compose.yml` (`docker compose up -d`). CI applies both sets to fresh databases and runs `dotnet ef migrations has-pending-model-changes` for each.
+
 ## Documentation
 
 | Guide | Description |
@@ -93,7 +114,8 @@ The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStr
 │   └── src/
 │       ├── Accelerator.Api/          # Controllers, DTOs, Middleware, Validators
 │       ├── Accelerator.Core/         # Entities, Services, Interfaces, Enums
-│       ├── Accelerator.Data/         # Repositories, DbContext, Migrations
+│       ├── Accelerator.Data/         # Repositories, DbContext, SQLite migrations
+│       ├── Accelerator.Data.SqlServer/ # SQL Server migrations
 │       └── Accelerator.Infrastructure/ # AppInsights, Caching, Rate Limiting
 ├── cms/                    # Dockerfile only — scaffold Strapi 5 yourself, see Optional: Strapi CMS above
 ├── infrastructure/         # Azure Bicep IaC

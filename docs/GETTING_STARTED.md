@@ -149,7 +149,7 @@ The Next.js dev server starts at **http://localhost:3000**.
 Follow this chain from back to front:
 
 1. **Entity** — `backend/src/Accelerator.Core/Entities/Article.cs` — add the property
-2. **Migration** — run `dotnet ef migrations add AddMyField --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api`, then `dotnet ef database update ...`
+2. **Migration** — add it to both provider sets (Decision 15): `dotnet ef migrations add AddMyField --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api` (SQLite), then `dotnet ef migrations add AddMyField --project backend/src/Accelerator.Data.SqlServer --startup-project backend/src/Accelerator.Api -- --ConnectionStrings:DefaultConnection "<SQL Server connection string>"` (SQL Server), then `dotnet ef database update ...` (see README "Database Migrations")
 3. **Repository** — `backend/src/Accelerator.Data/Repositories/ArticleRepository.cs` — include the field in queries if needed
 4. **DTO** — `backend/src/Accelerator.Api/DTOs/` — add to the relevant request/response DTO
 5. **Controller** — `backend/src/Accelerator.Api/Controllers/ArticlesController.cs` — map the field in create/update actions

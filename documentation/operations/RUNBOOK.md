@@ -168,11 +168,13 @@ SELECT Title, VoteCount FROM Articles ORDER BY VoteCount DESC;
 # Set connection string
 export CONNECTION_STRING="Server=tcp:<sql-server>.database.windows.net,1433;Initial Catalog=<db>;User ID=<user>;Password=<pass>;Encrypt=True;"
 
-# Run migrations
+# Run the SQL Server migration set (Decision 15). The connection string must go after `--`
+# so Program.cs registers the SQL Server provider; `--connection` alone keeps the SQLite
+# provider and fails with "Connection string keyword 'server' is not supported".
 dotnet ef database update \
-  --project backend/src/Accelerator.Data \
+  --project backend/src/Accelerator.Data.SqlServer \
   --startup-project backend/src/Accelerator.Api \
-  --connection "$CONNECTION_STRING"
+  -- --ConnectionStrings:DefaultConnection "$CONNECTION_STRING"
 ```
 
 ---

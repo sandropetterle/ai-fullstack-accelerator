@@ -66,7 +66,9 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
-// Database - Use SQLite when no connection string is configured (local dev), SQL Server otherwise
+// Database - Use SQLite when no connection string is configured (local dev), SQL Server otherwise.
+// Each provider has its own migration set (Decision 15): SQLite migrations live in
+// Accelerator.Data (the default migrations assembly), SQL Server ones in Accelerator.Data.SqlServer.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
@@ -78,7 +80,9 @@ else
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer(connectionString,
-            sqlOptions => sqlOptions.EnableRetryOnFailure()));
+            sqlOptions => sqlOptions
+                .MigrationsAssembly("Accelerator.Data.SqlServer")
+                .EnableRetryOnFailure()));
 }
 
 // CORS for Next.js frontend - Environment-specific

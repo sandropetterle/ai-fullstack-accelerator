@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Accelerator.Core\Accelerator.Core.csproj" />
     <ProjectReference Include="..\Accelerator.Data\Accelerator.Data.csproj" />
+    <ProjectReference Include="..\Accelerator.Data.SqlServer\Accelerator.Data.SqlServer.csproj" />
     <ProjectReference Include="..\Accelerator.Infrastructure\Accelerator.Infrastructure.csproj" />
   </ItemGroup>
 

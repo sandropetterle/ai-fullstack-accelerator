@@ -14,7 +14,8 @@ Accelerator.Api            ← HTTP layer: Controllers, DTOs, Middleware, Valida
 Accelerator.Infrastructure ← Cross-cutting: AppInsights, Caching, HealthChecks, RateLimiter
         ↓ depends on
 Accelerator.Core           ← Domain layer: Entities, Services, Interfaces, Enums, Value Objects
-Accelerator.Data           ← Persistence layer: Repositories, DbContext, Migrations
+Accelerator.Data           ← Persistence layer: Repositories, DbContext, SQLite Migrations
+Accelerator.Data.SqlServer ← SQL Server migrations only (Decision 15)
 ```
 
 **Dependency rule:** Outer layers depend on inner layers. No reverse dependencies. `Api` also directly references `Core` and `Data` for composition-root decisions (DbContext config, CORS, Auth) that stay in `Program.cs`.
@@ -256,8 +257,10 @@ backend/
 │   │   └── ValueObjects/      ← Slug
 │   └── Accelerator.Data/
 │       ├── Repositories/      ← ArticleRepository, UnitOfWork
-│       ├── Migrations/
-│       └── ApplicationDbContext.cs
+│   │   ├── Migrations/        ← SQLite migrations
+│   │   └── ApplicationDbContext.cs
+│   └── Accelerator.Data.SqlServer/
+│       └── Migrations/        ← SQL Server migrations
 └── tests/
     ├── Accelerator.Core.Tests/
     ├── Accelerator.Data.Tests/
