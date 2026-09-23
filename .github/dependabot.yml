@@ -43,6 +43,10 @@ updates:
       # does not yet support TypeScript 7. Defer until typescript-eslint adds support.
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
+      # Runtime is Node 24 LTS (engines >=24.15); hold @types/node at 25.x rather than
+      # letting it drift further ahead of the runtime
+      - dependency-name: "@types/node"
+        versions: [">=26.0.0"]
 
   # NOTE: no npm ecosystem entry for /cms — cms/ has no package.json in this
   # repo (Strapi is an optional, bring-your-own integration; see README).

@@ -35,7 +35,7 @@ Dependabot is configured in `.github/dependabot.yml`. It automatically opens pul
 - **npm** packages (frontend + Storybook)
 - **.NET NuGet** packages (all backend projects)
 - **Docker base images** — Dependabot tracks SHA digests for `FROM` lines and opens PRs when new digests are published
-- **GitHub Actions** — workflow action versions (`uses: actions/checkout@v4`)
+- **GitHub Actions** — workflow action versions, pinned by commit SHA (`uses: actions/checkout@<sha> # v7.0.1`)
 
 What Dependabot does NOT do:
 - It does not run your tests — your CI pipeline does that on the Dependabot PR

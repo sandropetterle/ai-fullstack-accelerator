@@ -11,7 +11,7 @@
 | Technology | Version | Purpose |
 |-----------|---------|---------|
 | Next.js | 16.3 | Framework (App Router, Server Components, ISR) |
-| React | 19.2 | UI rendering |
+| React | 19.3 | UI rendering |
 | TypeScript | 6.0 | Type safety |
 | Tailwind CSS | 3.4 | Utility-first styling |
 | shadcn/ui | — | Accessible component primitives |
