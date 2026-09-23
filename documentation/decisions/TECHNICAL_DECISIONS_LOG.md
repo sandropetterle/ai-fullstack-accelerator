@@ -4,9 +4,56 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **13 active decisions | 0 archived**
+> **14 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 14: Strapi CMS is an optional, bring-your-own integration
+
+**Date:** 2026-09-23
+**Title:** Descope Strapi from "ships in this repo" to "optional integration you scaffold yourself"; keep the Dockerfile, the frontend client, and the compose profile
+**Category:** CMS / Documentation
+**Status:** Active
+
+### Context / Problem
+
+An audit of the committed tree found `cms/` contains only `Dockerfile` and `.dockerignore` — there is no Strapi application source (no `package.json`, no `src/`). Despite this, README.md, CLAUDE.md, and `documentation/cms-components/COMPONENT_INDEX.md` described Strapi 5 as something the accelerator "ships," including paths like `cms/src/api/` and `cms/src/components/` that don't exist in the repo. The `cms/Dockerfile`'s `COPY package*.json ./` cannot succeed against the committed tree for the same reason. Separately, Decision 10's "Files Changed" and "Verified" sections state `cms/Dockerfile` was updated to `node:24-alpine` and that "Docker builds of the root and `cms/` Dockerfiles" were verified — that verification could only have exercised the `deps` stage's `COPY package*.json ./` against a locally-scaffolded Strapi app, not the tree as committed, which has no manifest to copy. The claim is misleading as written.
+
+### Decision
+
+- **Descope Strapi in the docs, not in the code.** Reworded every "Strapi ships/is included" claim in README.md (tagline, tech table, project-structure tree) and CLAUDE.md (Project Overview, Tech Stack) to state plainly that the CMS is optional and bring-your-own, and that `cms/` currently holds only a Dockerfile. Added a "Optional: Strapi CMS" section to README.md covering the scaffold command (`npx create-strapi@latest cms`), the env vars it needs, and how `lib/cms/client.ts` behaves with no CMS configured (`CmsUnavailableError` is caught by callers, which fall back to hardcoded content — the frontend runs without it).
+- **Annotated `documentation/cms-components/COMPONENT_INDEX.md`** with a note that the `cms/src/api/` / `cms/src/components/` paths it references exist only after scaffolding; left the schema/content-type documentation itself untouched, since it remains the correct target shape to (re)create.
+- **Removed the npm Dependabot entry for `/cms`** (`.github/dependabot.yml`) — there is no `package.json` for it to read, so the entry could only ever error or no-op. Kept the docker Dependabot entry for `/cms`, since `cms/Dockerfile` is a real, committed file Dependabot can scan.
+- **Left `cms/Dockerfile`, `docker-compose.yml`'s `cms` profile, `lib/cms/`, and `.github/workflows/cms-container-deploy.yml` unchanged.** None of these claim Strapi is committed; they are exactly the "bring your own, and here's the scaffolding to plug it into" surface this decision keeps. `cms-container-deploy.yml` triggers on `push` to `cms/**` but every job is gated on `vars.AZURE_DEPLOY_ENABLED == 'true'` (Decision 10), so it is a no-op by default even though it would fail to build `cms/` without a scaffolded app.
+- **Added an "Update (2026-09-23)" note to Decision 10** below, correcting its `cms/Dockerfile` build-verification claim without rewriting the original text, per this log's append-only discipline (`GOVERNANCE.md` Section 6).
+
+### Known Limitation: EF Core migrations are SQLite-generated
+
+Restating and tracking what Decision 8's Consequences already flagged: the single EF Core migrations set in `backend/src/Accelerator.Data/Migrations` was generated against the SQLite provider and does not apply cleanly to SQL Server (`PendingModelChangesWarning` on EF 10; `InvalidCastException` on Guid columns previously on EF 8). SQL Server needs its own provider-specific migrations assembly, which does not exist yet. **Tracking issue: TBD.**
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Remove the CMS integration entirely (`cms/`, `lib/cms/`, the compose profile, the deploy workflow) | Strapi is a stated differentiator of the accelerator (see Decision 3); the Dockerfile, client, and profile are already correct scaffolding for a bring-your-own app — deleting them loses real, reusable work over a documentation problem |
+| Scaffold an actual Strapi app into `cms/` and commit it | Turns a ~1000-file generated app into permanently-tracked source the accelerator would then have to keep updated (Strapi's own releases, security patches) on top of everything else in this repo; users who don't want the CMS still pay the checkout/clone cost; out of scope for a docs-accuracy fix |
+
+### Consequences
+
+- README.md, CLAUDE.md, and `documentation/cms-components/COMPONENT_INDEX.md` no longer claim a Strapi app is committed; a reader who runs `docker compose --profile cms up -d` without first scaffolding `cms/` will now find that expectation set correctly by the docs instead of discovering it from a failed build.
+- Dependabot no longer carries a dead npm entry for `/cms`; add one back (with a `strapi` group, matching the removed entry) once a Strapi app is scaffolded into the repo or into a fork.
+- The SQL Server migrations gap remains unresolved code work, now tracked instead of only mentioned in a Decision 8 consequence; revisit once the tracking issue is filed and numbered.
+- Anyone scaffolding Strapi into `cms/` should re-add the removed npm Dependabot block and re-verify `cms/Dockerfile` actually builds against the scaffolded app (Decision 10's claim to have done so cannot be relied on — see its Update note below).
+
+### Files Changed
+
+- `README.md` — reworded Strapi-ships claims (tagline, tech table, project-structure tree); added "Optional: Strapi CMS" section
+- `CLAUDE.md` — Project Overview and Tech Stack CMS line marked optional/bring-your-own
+- `documentation/cms-components/COMPONENT_INDEX.md` — added scaffold-first note at top
+- `.github/dependabot.yml` — removed npm `/cms` entry; kept docker `/cms` entry
+- `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` — this entry; "Update (2026-09-23)" note on Decision 10; header count
 
 ---
 
@@ -210,6 +257,8 @@ Node 20 removal from hosted runners makes this non-optional; Node 24 is the curr
 - Follow-up: PR #75 (isomorphic-dompurify -> 4.3.0) needs its own review; it is not superseded by this change.
 - **Update (2026-09-23):** PR #75 merged (isomorphic-dompurify -> `^4.3.0`); the extract-zip/`@lhci/cli` chain remains open and unresolved upstream — see Decision 13.
 - Verified: `node -v` (24.x locally), `npx -y npm@10 ci`, `npm audit --omit=dev --audit-level=high`, `npm run test:ci`, `npm run build`, `npm run build-storybook`, `npm run lint`, Docker builds of the root and `cms/` Dockerfiles, and YAML-parsed every workflow plus `dependabot.yml`.
+
+  **Update (2026-09-23):** the "Docker builds of ... the `cms/` Dockerfile" verification claim above cannot be true from the committed tree — `cms/` has never carried a Strapi app, only `Dockerfile` and `.dockerignore`, so `COPY package*.json ./` in the `deps` stage has nothing to copy. That build was necessarily run against a locally-scaffolded Strapi app, not what's in the repo. See Decision 14, which descopes Strapi to an optional, bring-your-own integration in the docs.
 
 ### Files Changed
 

@@ -44,30 +44,9 @@ updates:
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
 
-  # CMS npm (cms/)
-  - package-ecosystem: "npm"
-    directory: "/cms"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    groups:
-      strapi:
-        patterns:
-          - "@strapi/*"
-          - "strapi"
-      npm-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      # Strapi controls its React version — don't auto-bump
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-      # Strapi controls react-router-dom — don't auto-bump
-      - dependency-name: "react-router-dom"
-        update-types: ["version-update:semver-major"]
+  # NOTE: no npm ecosystem entry for /cms — cms/ has no package.json in this
+  # repo (Strapi is an optional, bring-your-own integration; see README).
+  # Add one back once you scaffold the Strapi app into cms/.
 
   # .NET NuGet (backend/)
   - package-ecosystem: "nuget"
