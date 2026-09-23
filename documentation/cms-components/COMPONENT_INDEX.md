@@ -6,6 +6,8 @@
 
 > **Status:** Placeholder — populate this index when you have seeded your Strapi instance and finalized your content model.
 
+> **Note:** Strapi is an optional, bring-your-own integration — `cms/` in this repo ships only a `Dockerfile`. The `cms/src/api/` and `cms/src/components/` paths referenced below exist only after you scaffold a Strapi 5 app into `cms/` (see the README's "Optional: Strapi CMS" section). This document describes the content model to (re)create once you do.
+
 ---
 
 ## How to Use This Index
@@ -19,7 +21,7 @@ Each content type and component in your Strapi instance should be documented her
 
 ## Content Types
 
-The accelerator ships with these Strapi content types (configured in `cms/src/api/`):
+The expected Strapi content types (create them in `cms/src/api/` after scaffolding):
 
 | Content Type | Purpose |
 |-------------|---------|

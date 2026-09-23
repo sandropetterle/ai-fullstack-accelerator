@@ -12,7 +12,7 @@
 [![Strapi 5](https://img.shields.io/badge/Strapi-5-4945FF?logo=strapi&logoColor=white)](https://strapi.io)
 [![Azure](https://img.shields.io/badge/Azure-Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/products/container-apps)
 
-> **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 10 + Strapi 5 CMS + Azure IaC.
+> **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 10 + optional Strapi 5 CMS + Azure IaC.
 > Clone, rename your entity, and ship.
 
 ## What's Included
@@ -22,7 +22,7 @@
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui |
 | Backend | ASP.NET Core 10, Clean Architecture, Entity Framework Core 10, FluentValidation |
 | Auth | Auth.js v5 + any OIDC provider (Entra, Auth0, Cognito, Okta, Keycloak) |
-| CMS | Strapi 5 (optional, Docker-profiled) |
+| CMS | Optional headless CMS (Strapi 5): bring your own, see [Optional: Strapi CMS](#optional-strapi-cms) |
 | Database | SQLite (dev) / SQL Server (prod) |
 | IaC | Azure Bicep (Container Apps, Key Vault, SQL, MySQL, Storage, ACR) |
 | CI/CD | GitHub Actions (test → build → deploy gate) |
@@ -70,6 +70,18 @@ Open [http://localhost:3000](http://localhost:3000) — you have a running full-
 | [Auth Setup Guide](documentation/operations/AUTH_SETUP_GUIDE.md) | Configure your OIDC provider |
 | [Infrastructure](infrastructure/README.md) | Bicep IaC deployment guide |
 
+## Optional: Strapi CMS
+
+The accelerator's frontend can read hero/labels/page content from a headless CMS, but that CMS is **bring your own** — it is not committed to this repo. `cms/` currently holds only a `Dockerfile` (and `.dockerignore`) as a starting point for a production container build; there is no Strapi application source checked in.
+
+To use it:
+
+1. Scaffold a Strapi 5 app into `cms/`: `npx create-strapi@latest cms` (check the Strapi docs for the current flags for your use case — non-interactive/quickstart options change between releases).
+2. Set `STRAPI_URL` and `STRAPI_API_TOKEN` in `.env.local` (see `.env.example`).
+3. Start it alongside the rest of the stack with `docker compose --profile cms up -d` (see [Decision 3](documentation/decisions/TECHNICAL_DECISIONS_LOG.md)).
+
+The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStrapi()` catches network/HTTP failures and throws `CmsUnavailableError`; `safeFetch()` in `lib/cms/queries.ts` catches it and returns hardcoded fallbacks (nav/footer, pages, labels). So the app runs fine with `STRAPI_URL` unset/unreachable — you only need to scaffold and run Strapi if you want to manage that content from a CMS instead of hardcoding it. See [CMS Removal Guide](docs/CMS_REMOVAL_GUIDE.md) if you don't want the integration at all.
+
 ## Project Structure
 
 ```
@@ -83,7 +95,7 @@ Open [http://localhost:3000](http://localhost:3000) — you have a running full-
 │       ├── Accelerator.Core/         # Entities, Services, Interfaces, Enums
 │       ├── Accelerator.Data/         # Repositories, DbContext, Migrations
 │       └── Accelerator.Infrastructure/ # AppInsights, Caching, Rate Limiting
-├── cms/                    # Strapi 5 (optional; start with --profile cms)
+├── cms/                    # Dockerfile only — scaffold Strapi 5 yourself, see Optional: Strapi CMS above
 ├── infrastructure/         # Azure Bicep IaC
 ├── deployment/             # Deployment scripts and guides
 ├── docs/                   # Accelerator guides (getting started, tech swap, etc.)

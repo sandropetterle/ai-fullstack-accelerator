@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Fullstack Accelerator: Next.js 16 + ASP.NET Core 10 + Strapi 5 CMS with Clean Architecture.
+AI Fullstack Accelerator: Next.js 16 + ASP.NET Core 10 with Clean Architecture, plus an optional Strapi 5 CMS.
 Example domain entity: **Article** (rename via `scripts/rename-entity.sh`).
 
 **Tech Stack:**
@@ -13,7 +13,7 @@ Example domain entity: **Article** (rename via `scripts/rename-entity.sh`).
 - **Database:** SQLite (development), SQL Server (production)
 - **Deployment:** Azure Container Apps
 - **Testing:** Jest + React Testing Library (frontend), xUnit + Moq (backend), Playwright (E2E, cross-browser), Lighthouse CI, Chromatic
-- **CMS:** Strapi 5 (headless, `cms/` directory), MySQL (production), Azure Blob Storage (media)
+- **CMS (optional, bring your own):** Strapi 5 (headless). `cms/` currently holds only a `Dockerfile`; scaffold the app yourself (`npx create-strapi@latest cms`) before the MySQL/Azure Blob Storage/docker-compose `cms` profile pieces are usable. See README's "Optional: Strapi CMS" section.
 
 ## Development Commands
 
