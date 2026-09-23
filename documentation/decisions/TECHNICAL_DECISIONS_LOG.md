@@ -33,7 +33,7 @@ Next.js 16 removed `next lint` entirely, so `npm run lint` (which called it) fai
 
 The Next.js docs (`/docs/app/api-reference/config/eslint`) prescribe exactly this `eslint.config.mjs` shape as the v16 replacement for `next lint`; no codemod was needed since the config was small enough to hand-migrate. `eslint` stayed on the current major (9.x) — Dependabot is configured to ignore ESLint v10 bumps, so following that same policy here keeps the two in sync.
 
-The blanket `ajv` override (in place since before this change, originally added to patch a vulnerable transitive `ajv`) turned out to be fundamentally incompatible with any ESLint version: both `eslint` and `@eslint/eslintrc` hard-depend on `ajv ^6.14.0` for their internal JSON-schema config validation, and `ajv` 8.x removed the `missingRefs` option those packages call internally (`TypeError: Cannot set properties of undefined (setting 'defaultMeta')` / `Cannot find module 'ajv/lib/refs/json-schema-draft-04.json'`). Forcing `ajv` globally to 8.x therefore broke ESLint outright regardless of flat vs. legacy config — this had simply never been caught because lint was never run. Scoping the override per-parent-package (`npm overrides` supports this) keeps the original security intent (non-ESLint consumers still get the patched `ajv`) without breaking ESLint.
+The blanket `ajv` override (present since the repository's initial commit, with no recorded reason in git history) turned out to be fundamentally incompatible with any ESLint version: both `eslint` and `@eslint/eslintrc` hard-depend on `ajv ^6.14.0` for their internal JSON-schema config validation, and `ajv` 8.x removed the `missingRefs` option those packages call internally (`TypeError: Cannot set properties of undefined (setting 'defaultMeta')` / `Cannot find module 'ajv/lib/refs/json-schema-draft-04.json'`). Forcing `ajv` globally to 8.x therefore broke ESLint outright regardless of flat vs. legacy config — this had simply never been caught because lint was never run. Scoping the override per-parent-package (`npm overrides` supports this) keeps the original security intent (non-ESLint consumers still get the patched `ajv`) without breaking ESLint.
 
 ### Alternatives Evaluated
 
@@ -47,7 +47,7 @@ The blanket `ajv` override (in place since before this change, originally added 
 
 - `npm run lint` now runs and gates CI (`frontend-tests` job); a future lint regression will fail PRs instead of going unnoticed.
 - The `ajv` override is now two entries instead of one; anyone touching it in future dependency work needs to keep the `eslint` / `@eslint/eslintrc` nested overrides in sync with whatever `ajv` major those packages require.
-- `react-hooks` (bundled via `eslint-config-next` 16) added a new `set-state-in-effect` rule; the four legitimate browser-API hydration call sites it flagged got a scoped `eslint-disable-next-line` with a comment, not a project-wide rule disable.
+- `react-hooks` (bundled via `eslint-config-next` 16) added a new `set-state-in-effect` rule; the five legitimate browser-API hydration/debounce call sites it flagged got a scoped `eslint-disable-next-line` with a comment, not a project-wide rule disable.
 
 ### Files Changed
 
@@ -63,6 +63,10 @@ The blanket `ajv` override (in place since before this change, originally added 
 ### Tests Added
 
 - None (lint-only change); existing Jest suite (`npm run test:ci`) and `tsc --noEmit` re-verified green after the migration.
+
+---
+
+## Decision 8: Upgrade Backend to .NET 10 LTS
 
 **Date:** 2026-09-22
 **Title:** Migrate backend from .NET 8 / EF Core 8 to .NET 10 / EF Core 10 (LTS to LTS)
