@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Github, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { GithubIcon as Github } from '@/components/icons/GithubIcon'
 import type { CmsCtaButton } from '@/lib/cms/types'
 
 type CTASectionProps = {

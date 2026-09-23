@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Github } from 'lucide-react'
+import { GithubIcon as Github } from '@/components/icons/GithubIcon'
 import type { CmsFooterConfig } from '@/lib/cms/types'
 
 const DEFAULT_FOOTER: CmsFooterConfig = {
