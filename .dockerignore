@@ -10,7 +10,9 @@
 .claude
 .vscode
 .idea
-*.log
+**/*.log
+*.stackdump
+*.tsbuildinfo
 
 # Node
 node_modules
@@ -29,8 +31,6 @@ e2e/.auth
 !.env.example
 
 # Other apps not needed to build the frontend image
-backend/**/bin
-backend/**/obj
 backend
 cms
 

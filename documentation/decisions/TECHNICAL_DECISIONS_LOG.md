@@ -4,11 +4,9 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **11 active decisions | 0 archived**
+> **12 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
->
-> **Note:** Decision 12 (below) was authored in parallel with a Decision 11 PR that may not be merged yet. Numbers were assigned independently; reconcile ordering on merge if both land.
 
 ---
 
@@ -28,7 +26,7 @@ None of the three Docker build contexts (root — frontend, `backend/`, `cms/`) 
 Added a `.dockerignore` at each build context root:
 
 - **`/.dockerignore`** (frontend, build context = repo root): excludes `.git`, `.claude`, `.vscode`, `.idea`, `*.log`, `node_modules`, `.next`, `storybook-static`, `coverage`, `playwright-report`, `test-results`, `e2e/.auth`, `.env`/`.env.*` (with `!.env.example` kept, since nothing in the image needs secrets but the example file is harmless), the unrelated `backend/` and `cms/` app trees (plus an explicit `backend/**/bin` / `backend/**/obj` rule), and `docs/`/`documentation/` (not needed at runtime).
-- **`backend/.dockerignore`** (build context = `backend/`, confirmed via `.github/workflows/backend-container-deploy.yml`'s `working-directory: ./backend` + `docker build .`): excludes `.git`, `.claude`, `.vscode`, `.idea`, `*.log`, `**/bin`, `**/obj`, `tests/` (not needed for `dotnet publish`), `.env`/`.env.*` (`!.env.example` kept), and `docs/`/`documentation/`.
+- **`backend/.dockerignore`** (build context = `backend/`, confirmed via `.github/workflows/backend-container-deploy.yml`'s `working-directory: ./backend` + `docker build .`): excludes `.git`, `.claude`, `.vscode`, `.idea`, `*.log`, `**/bin`, `**/obj`, local secrets and per-environment config that `dotnet publish` would otherwise copy into `/app` via the Dockerfile's `COPY . .` (`**/appsettings.Development.json`, `**/appsettings.Local.json`, `**/appsettings.Production.json`, `**/secrets.json`) and local SQLite database files (`**/*.db`, `**/*.db-shm`, `**/*.db-wal`), `tests/` (not needed for `dotnet publish`), `.env`/`.env.*` (`!.env.example` kept), and `docs/`/`documentation/`. None of these appsettings/secrets/db files are committed to the repo (confirmed via `git ls-files backend | grep -i appsettings` — no matches; they're already `.gitignore`d), so excluding them from the build context is purely defense-in-depth against a developer's local working tree.
 - **`cms/.dockerignore`** (build context = `cms/`, confirmed via `docker-compose.yml`'s `context: ./cms` and `.github/workflows/cms-container-deploy.yml`'s `working-directory: ./cms`): excludes `.git`, `.claude`, `.vscode`, `.idea`, `*.log`, `node_modules`, `.tmp`, `build`, `dist`, `.env`/`.env.*` (`!.env.example` kept), and `docs`/`documentation`. (Note: the `cms/` directory in this repo currently tracks only `Dockerfile` — the Strapi app source is scaffolded locally/by users — so this file is forward-looking protection for when that source exists.)
 
 Each Dockerfile's `COPY` lines were re-checked against the exclusion list to confirm nothing required for the build is excluded.

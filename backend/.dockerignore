@@ -14,6 +14,17 @@
 **/bin
 **/obj
 
+# Local secrets / per-env config and local SQLite databases
+# (dotnet publish copies appsettings*.json into the output — never bake
+# local/dev secrets or a local database file into the image)
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.Production.json
+**/secrets.json
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
 # Tests (not needed in the published image)
 tests
 

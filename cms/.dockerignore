@@ -15,6 +15,7 @@ node_modules
 .tmp
 build
 dist
+public/uploads
 
 # Env files (never bake secrets into the image)
 .env
