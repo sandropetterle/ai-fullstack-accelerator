@@ -42,7 +42,7 @@ Restating and tracking what Decision 8's Consequences already flagged: the singl
 
 ### Consequences
 
-- README.md, CLAUDE.md, and `documentation/cms-components/COMPONENT_INDEX.md` no longer claim a Strapi app is committed; a reader who runs `docker compose --profile cms up -d` without first scaffolding `cms/` will now find that expectation set correctly by the docs instead of discovering it from a failed build.
+- README.md, CLAUDE.md, `documentation/cms-components/COMPONENT_INDEX.md`, and `documentation/architecture/CMS_ARCHITECTURE.md` no longer claim a Strapi app is committed; a reader who runs `docker compose --profile cms up -d` without first scaffolding `cms/` will now find that expectation set correctly by the docs instead of discovering it from a failed build.
 - Dependabot no longer carries a dead npm entry for `/cms`; add one back (with a `strapi` group, matching the removed entry) once a Strapi app is scaffolded into the repo or into a fork.
 - The SQL Server migrations gap remains unresolved code work, now tracked in issue #87 instead of only mentioned in a Decision 8 consequence.
 - Anyone scaffolding Strapi into `cms/` should re-add the removed npm Dependabot block and re-verify `cms/Dockerfile` actually builds against the scaffolded app (Decision 10's claim to have done so cannot be relied on — see its Update note below).
@@ -52,6 +52,7 @@ Restating and tracking what Decision 8's Consequences already flagged: the singl
 - `README.md` — reworded Strapi-ships claims (tagline, tech table, project-structure tree); added "Optional: Strapi CMS" section
 - `CLAUDE.md` — Project Overview and Tech Stack CMS line marked optional/bring-your-own
 - `documentation/cms-components/COMPONENT_INDEX.md` — added scaffold-first note at top
+- `documentation/architecture/CMS_ARCHITECTURE.md` — "Scaffold first" note in section 4; `cms/data/seed.ts` marked not committed
 - `.github/dependabot.yml` — removed npm `/cms` entry; kept docker `/cms` entry
 - `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` — this entry; "Update (2026-09-23)" note on Decision 10; header count
 
