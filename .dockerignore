@@ -1,0 +1,44 @@
+# ============================================================================
+# .dockerignore for the frontend (Next.js) build context = repo root
+# Keeps secrets, local artefacts, and unrelated app folders out of the image.
+# ============================================================================
+
+# Version control / editor / tooling
+.git
+.gitattributes
+.gitignore
+.claude
+.vscode
+.idea
+**/*.log
+*.stackdump
+*.tsbuildinfo
+
+# Node
+node_modules
+.next
+storybook-static
+coverage
+
+# Testing / E2E
+playwright-report
+test-results
+e2e/.auth
+
+# Env files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Other apps not needed to build the frontend image
+backend
+cms
+
+# Docs not needed at runtime
+docs
+documentation
+
+# Misc
+README.md
+DOCUMENTATION_INDEX.md
+LICENSE
