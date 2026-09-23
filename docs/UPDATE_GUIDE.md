@@ -102,7 +102,7 @@ The `Dockerfile` uses versioned base images. Dependabot tracks these and opens P
 
 To manually check for newer images:
 ```bash
-docker pull node:20-alpine
+docker pull node:24-alpine
 docker pull mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 docker pull mcr.microsoft.com/dotnet/sdk:10.0
 ```
@@ -116,28 +116,28 @@ docker build -f Dockerfile .
 
 ## Node.js Major Version Upgrade
 
-Example: Node.js 20 → 22
+Example: Node.js 24 → 26
 
-1. Update the `FROM` line in `Dockerfile`:
+1. Update the `FROM` line in `Dockerfile` (and `cms/Dockerfile`):
    ```dockerfile
    # Before
-   FROM node:20-alpine AS deps
+   FROM node:24-alpine AS deps
    # After
-   FROM node:22-alpine AS deps
+   FROM node:26-alpine AS deps
    ```
 
-2. Update `engines` in `package.json`:
+2. Update `engines` in `package.json` and `.nvmrc`:
    ```json
    "engines": {
-     "node": ">=22"
+     "node": ">=26"
    }
    ```
 
 3. Update the Node.js version in `.github/workflows/` `setup-node` actions:
    ```yaml
-   - uses: actions/setup-node@v4
+   - uses: actions/setup-node@v7
      with:
-       node-version: '22'
+       node-version: '26'
    ```
 
 4. Test locally with the new Node.js version installed, then run:

@@ -25,6 +25,10 @@ updates:
           - "@types/node"
           - "@types/react"
           - "@types/react-dom"
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # tailwindcss v4 is a breaking rewrite — defer to Phase 8
       - dependency-name: "tailwindcss"
@@ -47,6 +51,10 @@ updates:
         patterns:
           - "@strapi/*"
           - "strapi"
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # Strapi controls its React version — don't auto-bump
       - dependency-name: "react"
@@ -92,12 +100,20 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Docker — frontend
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "monthly"
+    ignore:
+      # We adopt new Node LTS majors deliberately (see decision log)
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   # Docker — backend
   - package-ecosystem: "docker"
@@ -115,3 +131,7 @@ updates:
     directory: "/cms"
     schedule:
       interval: "monthly"
+    ignore:
+      # We adopt new Node LTS majors deliberately (see decision log)
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

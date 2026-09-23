@@ -53,6 +53,7 @@ jobs:
       - name: Generate coverage report
         uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./backend/TestResults/**/coverage.cobertura.xml
           flags: backend
           name: backend-coverage
@@ -78,7 +79,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -99,6 +100,7 @@ jobs:
       - name: Generate coverage report
         uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/coverage-final.json
           flags: frontend
           name: frontend-coverage
@@ -134,7 +136,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -230,6 +232,7 @@ jobs:
           name: login-diagnostic-screenshots-${{ matrix.browser }}
           path: e2e/.auth/*.png
           if-no-files-found: ignore
+          include-hidden-files: true
           retention-days: 7
 
   validate-infrastructure:

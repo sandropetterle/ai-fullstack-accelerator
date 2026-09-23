@@ -70,6 +70,12 @@ Configure at: **Settings → Secrets and variables → Actions → Variables tab
 |----------|-------------|---------------|
 | `LHCI_API_BASE_URL` | Backend API URL used during Lighthouse CI build (so SSR fetches succeed). Set to the production API URL. | `https://ca-myapp-api-prod.xxx.azurecontainerapps.io/api` |
 
+### Deploy Gate
+
+| Variable | Description | Example value |
+|----------|-------------|---------------|
+| `AZURE_DEPLOY_ENABLED` | Set to `true` to enable the Azure Container Apps deploy jobs in `frontend-container-deploy.yml`, `backend-container-deploy.yml` and `cms-container-deploy.yml`. Forks and template users who have not provisioned Azure resources should leave this unset (or `false`) — the deploy/healthcheck/tag-latest/rollback jobs are then skipped (neutral), not failed. | `true` |
+
 ---
 
 ## How to find your Azure resource names
@@ -111,4 +117,6 @@ az containerapp list --resource-group rg-myapp-prod --query "[].name" -o tsv
 
 5. Set remaining **secrets** (AUTH_SECRET, AUTH_ENTRA_*, etc.).
 
-6. Push to `main` to trigger the first deploy.
+6. Set the `AZURE_DEPLOY_ENABLED` variable to `true` to enable the deploy jobs.
+
+7. Push to `master` to trigger the first deploy.
