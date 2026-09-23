@@ -10,16 +10,16 @@
 
 | Technology | Version | Purpose |
 |-----------|---------|---------|
-| Next.js | 16 | Framework (App Router, Server Components, ISR) |
-| React | 19 | UI rendering |
-| TypeScript | — | Type safety |
+| Next.js | 16.3 | Framework (App Router, Server Components, ISR) |
+| React | 19.2 | UI rendering |
+| TypeScript | 6.0 | Type safety |
 | Tailwind CSS | 3.4 | Utility-first styling |
 | shadcn/ui | — | Accessible component primitives |
-| Auth.js (NextAuth) | v5 | Authentication (OIDC) |
-| react-markdown + rehype-sanitize | — | Safe markdown rendering |
-| Sonner | — | Toast notifications |
+| Auth.js (NextAuth) | v5.0.0-beta | Authentication (OIDC) |
+| react-markdown + rehype-sanitize | 10.1 / 6.0 | Safe markdown rendering |
+| Sonner | 2.0 | Toast notifications |
 | next/image | — | Optimized image loading |
-| Lucide | — | Icon library |
+| Lucide | 1.x | Icon library |
 
 ---
 

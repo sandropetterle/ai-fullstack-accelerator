@@ -13,7 +13,7 @@
 ## Decision 11: Adopt lucide-react 1.x and TypeScript 6; defer TypeScript 7; build and type-check in CI
 
 **Date:** 2026-09-23
-**Title:** Take Dependabot's lucide-react 1.x major (with a hand-ported replacement for the `Github` icon it removed) and TypeScript's latest 5.x-compatible 6.0.x release, defer TypeScript 7 until typescript-eslint supports it, and add `tsc --noEmit` + `next build` to CI so a class of breakage like this is caught automatically going forward.
+**Title:** Take Dependabot's lucide-react 1.x major (with a hand-ported replacement for the `Github` icon it removed) and TypeScript's latest 6.0.x release (within typescript-eslint's <6.1.0 peer range), defer TypeScript 7 until typescript-eslint supports it, and add `tsc --noEmit` + `next build` to CI so a class of breakage like this is caught automatically going forward.
 **Category:** Technology
 **Status:** Active
 
@@ -23,7 +23,7 @@ Two Dependabot PRs were queued: #72 bumps `lucide-react` 0.577.0 -> 1.47.0, and 
 
 ### Decision
 
-- **lucide-react -> ^1.47.0.** Added `components/icons/GithubIcon.tsx`: a small `forwardRef` component that inline-renders the exact `<svg>`/`<path>` markup lucide-react 0.577.0 shipped for the `github` icon (paths extracted from that version's package before upgrading), replicating lucide's own prop defaults (`size=24`, `strokeWidth=2`, `color="currentColor"`, `absoluteStrokeWidth`, auto `aria-hidden` when no accessible name is given) and typed with lucide's `LucideProps`. Exported both as default and as a named `GithubIcon` export. The three affected files now `import { GithubIcon as Github } from '@/components/icons/GithubIcon'` instead of importing `Github` from `lucide-react`, so no JSX changed. Grepped all 33 `from 'lucide-react'` import sites and ran `tsc --noEmit` after the bump — `Github` was the only icon lucide-react 1.x removed that this codebase used.
+- **lucide-react -> ^1.47.0.** Added `components/icons/GithubIcon.tsx`: a small `forwardRef` component that inline-renders the exact `<svg>`/`<path>` markup lucide-react 0.577.0 shipped for the `github` icon (paths extracted from that version's package before upgrading), replicating lucide's own prop defaults (`size=24`, `strokeWidth=2`, `color="currentColor"`, `absoluteStrokeWidth`, auto `aria-hidden` when no accessible name is given) and typed with lucide's `LucideProps`. Exported both as default and as a named `GithubIcon` export. The three affected files now `import { GithubIcon as Github } from '@/components/icons/GithubIcon'` instead of importing `Github` from `lucide-react`, so no JSX changed. Grepped all 37 `from 'lucide-react'` import sites and ran `tsc --noEmit` after the bump — `Github` was the only icon lucide-react 1.x removed that this codebase used.
 - **typescript -> ^6.0.3** (latest 6.0.x; 6.1+ is outside typescript-eslint's `<6.1.0` peer ceiling and was not taken). `npm install` re-resolved `typescript-eslint`/`@typescript-eslint/parser` (transitive via `eslint-config-next`'s `typescript-eslint: ^8.46.0`) to `8.70.1`, whose peer range (`>=4.8.4 <6.1.0`) accepts 6.0.3 without any `--legacy-peer-deps` or override. `npm run lint` and `npx tsc --noEmit` both pass clean.
 - **TypeScript 7 deferred.** Added an `ignore` entry for `typescript` with `versions: [">=7.0.0"]` to the root npm block in `.github/dependabot.yml`, with a comment explaining the typescript-eslint peer-range blocker, so Dependabot stops proposing it until typescript-eslint catches up.
 - **CI gap closed.** `.github/workflows/test.yml` Frontend Tests job gained a `Type check` step (`npx tsc --noEmit`) and a `Build` step (`npm run build`) immediately after `Lint`. The `Build` step reuses the same env vars as the E2E job's frontend build step (`NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_API_TIMEOUT`, `AUTH_SECRET` with the same non-secret E2E fallback, `AUTH_TRUST_HOST`) since Auth.js v5's `auth()` call in server components fails `next build` without `AUTH_SECRET`; no backend is running in this job, which is fine — `next build`'s static-generation fetch failures for `/articles` are logged but non-fatal (verified locally, exit code 0).
@@ -40,7 +40,7 @@ Dependabot's job is to open the PR, not to verify it's safe to merge blind — t
 | Merge Dependabot #72 as-is | Removes `Github` from lucide-react's export surface; crashes the footer on every page render, undetected by current CI (no `tsc`/`build` step) |
 | Merge Dependabot #73 as-is (TypeScript 7.0.2) | `typescript-eslint`'s peer range excludes TypeScript 7; `npm run lint` fails immediately |
 | Add a second icon package (e.g. `simple-icons`) just for the GitHub glyph | Extra dependency and bundle weight for one icon; a ~30-line local component is simpler and has no third-party surface to track |
-| Stay on lucide-react 0.x indefinitely | 0.x is the pre-1.0 line; deferring the major forever accumulates drift against upstream fixes to the ~1500 other icons in use |
+| Stay on lucide-react 0.x indefinitely | 0.x is the pre-1.0 line; deferring the major forever accumulates drift against upstream fixes to the ~35 icons in use |
 | Stay on TypeScript 5.9 | No blocker to moving to the latest 5.x-line-compatible 6.0.x release; deferring gains nothing since 6.0.x is already typescript-eslint-safe |
 
 ### Consequences

@@ -30,12 +30,9 @@ const GithubIcon = forwardRef<SVGSVGElement, LucideProps>(
       ? (Number(strokeWidth) * 24) / Number(size)
       : strokeWidth
 
-    const hasA11yLabel =
-      'aria-label' in rest ||
-      'aria-labelledby' in rest ||
-      'aria-hidden' in rest ||
-      'role' in rest ||
-      'title' in rest
+    const hasA11yLabel = Object.keys(rest).some(
+      (k) => k.startsWith('aria-') || k === 'role' || k === 'title'
+    )
 
     return (
       <svg

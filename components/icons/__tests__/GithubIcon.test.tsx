@@ -34,4 +34,11 @@ describe('GithubIcon', () => {
     expect(svg).toHaveAttribute('aria-label', 'GitHub')
     expect(svg).not.toHaveAttribute('aria-hidden')
   })
+
+  it('respects any other aria- prop, e.g. aria-describedby, instead of aria-hidden', () => {
+    const { container } = render(<GithubIcon aria-describedby="github-desc" />)
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveAttribute('aria-describedby', 'github-desc')
+    expect(svg).not.toHaveAttribute('aria-hidden')
+  })
 })
