@@ -4,9 +4,58 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **12 active decisions | 0 archived**
+> **13 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 13: Release-readiness dependency baseline for v1.0.0
+
+**Date:** 2026-09-23
+**Title:** Reconcile the decision log with the dependency state actually shipping for v1.0.0 — isomorphic-dompurify 4.x, the `flatted`/`serialize-javascript` overrides, the remaining accepted dev-only audit findings, and the master-CI concurrency fix
+**Category:** Security / Infrastructure
+**Status:** Active
+
+### Context / Problem
+
+A pre-release pass found the log had drifted from `package.json`/CI reality in three places: (1) Decision 10 still described `isomorphic-dompurify` as `^3.23.0` with Dependabot PR #75 open, but PR #75 merged 2026-09-23 and `package.json` has carried `^4.3.0` since; (2) `package.json` `overrides` carries `flatted` and `serialize-javascript` entries with no decision recording why; (3) Decisions 6 and 7 accepted/deferred advisories (postcss/next bundled-postcss risk; esbuild) that later PRs (#68, #84) already resolved, but nothing said so. Separately, a `workflow_dispatch` run on `master` cancelled the concurrent push run via `test.yml`'s `cancel-in-progress: true`, turning the README CI badge red for a run that never actually failed.
+
+### Decision
+
+- **isomorphic-dompurify 4.x confirmed adopted.** PR #75 (`3.23.0` -> `4.3.0`) merged 2026-09-23, superseding the "left open for separate review" note in Decision 10 and the `~3.19.0`/Node-floor caveat in Decision 7. `package.json` now reads `"isomorphic-dompurify": "^4.3.0"`. See "Update (2026-09-23)" notes added to Decisions 6, 7, and 10 below rather than rewriting their original reasoning.
+- **`overrides.flatted` (`>=3.4.0`) and `overrides.serialize-javascript` (`>=7.0.3`) — reason recorded.** Both were added together with `ajv` in `33f3464` (2026-03-24), the commit that created `package.json`, before Decision 1 existed. `flatted >=3.4.0` targets GHSA-25h7-pfq9-p65f (`parse()` recursion DoS, <3.4.0); it resolves to 3.4.2 via `flat-cache`. `serialize-javascript >=7.0.3` targets GHSA-5c6j-r48x-rmvq (RCE, <=7.0.2); no package in today's lockfile depends on it, so the override is currently inert. Neither ever raised a Dependabot alert (105 alerts, all states checked). Kept as cheap insurance.
+- **Remaining full-audit findings — accepted, dev-only.** `npx -y npm@10 audit --package-lock-only` (full, including dev): 12 vulnerabilities (6 low, 6 high), 0 in `npm audit --omit=dev --package-lock-only` (production). All 12 are in two dev-only chains already tracked in Decisions 6/7 and unresolved upstream:
+  - `elliptic` / `browserify-sign` / `create-ecdh` / `crypto-browserify` / `node-polyfill-webpack-plugin` via `@storybook/nextjs` (no patched `elliptic` exists).
+  - `extract-zip` (path traversal, GHSA-jmr9-qjv8-65gv / GHSA-7pqw-9j4j-h8q3) via `@puppeteer/browsers` -> `puppeteer-core` -> `lighthouse` -> `@lhci/cli`/`@lhci/utils` (fix requires `@lhci/cli` to ship on `lighthouse` >=13, not yet released).
+
+  No new overrides or downgrades applied — an `npm audit fix --force` would still pull `@storybook/nextjs` back to 7.0.14 and `@lhci/cli` to 0.12.0, both regressions. **Review trigger:** re-evaluate when upstream fixes land in `@lhci/cli` or `@storybook/nextjs`, or at each minor release, whichever comes first.
+- **`test.yml` concurrency — master push runs are never self-cancelled.** Changed `cancel-in-progress: true` to `cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}` (group unchanged: `test-${{ github.ref }}`). PR branches keep auto-cancel-on-new-push behavior; `master`'s push-triggered run (the one the README badge reads) is no longer cancelled when a `workflow_dispatch` starts on the same ref. (A group still holds only one pending run, so a third queued run can replace a second one that is still waiting; runs already in progress are left alone.)
+
+### Rationale
+
+Same principle as every prior security decision in this log: what's actually shipping in `package.json`/the lockfile is the source of truth, and the log exists to explain *why* it looks that way — a log that says something different from `package.json` is worse than no log, because it actively misleads the next reviewer. Recording the `flatted`/`serialize-javascript` overrides after the fact (rather than pretending they were never there) keeps the log's append-only, no-rewritten-history discipline intact per `GOVERNANCE.md` Section 6. The `test.yml` fix is a one-line, zero-risk correction: it only removes cancellation for the one ref whose result is externally visible.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Silently edit Decisions 6/7/10 in place to reflect current state | Violates the append-only/no-rewritten-history log discipline; a reader auditing history would lose the original reasoning that was correct at the time |
+| Drop `cancel-in-progress` entirely (always `false`) | Loses the useful auto-cancel-on-superseding-push behavior for PR branches, which saves CI minutes on rapid-iteration pushes |
+| Remove the `flatted`/`serialize-javascript` overrides since no tracked alert justifies them | `flatted` still resolves to a patched 3.4.2; `serialize-javascript` is inert today but would guard a future transitive re-entry. Removing either saves nothing, and both floors are non-breaking for their consumers |
+
+### Consequences
+
+- The decision log's "current state" statements about `isomorphic-dompurify`, the full audit, and CI concurrency now match `package.json`/`package-lock.json`/`test.yml` as of 2026-09-23.
+- Future `flatted`/`serialize-javascript` version bumps in the dependency chain should keep these overrides' lower bounds in mind if the override is ever removed (check no CVE has been reintroduced below `3.4.0` / `7.0.3` respectively).
+- The `elliptic` and `extract-zip` chains remain the only known outstanding audit debt for v1.0.0, both dev-only and both blocked on upstream releases, not on anything actionable in this repo.
+- Verified: `package.json` (`isomorphic-dompurify: ^4.3.0`, `overrides.flatted`/`overrides.serialize-javascript` present), `gh pr view 75` (merged 2026-09-23), `gh api .../dependabot/alerts --paginate` (105 alerts, none for `flatted`/`serialize-javascript`), `git log -S flatted -- package.json` / `git log -S serialize-javascript -- package.json` (both introduced in `33f3464`), `npx -y npm@10 audit --package-lock-only` (12: 6 low, 6 high, all dev-only), `npx -y npm@10 audit --package-lock-only --omit=dev` (0), lockfile grep confirms only `esbuild@0.28.2` resolved (no other esbuild version present).
+
+### Files Changed
+
+- `.github/workflows/test.yml` — `concurrency.cancel-in-progress` scoped to non-`master` refs
+- `.gitignore` — `*.stackdump` added
+- `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` — this entry; "Update (2026-09-23)" notes on Decisions 6, 7, 10; header count
 
 ---
 
@@ -134,6 +183,8 @@ Node 20 reached end-of-life and was removed from GitHub-hosted runner images on 
 
 - **Node 24 everywhere:** root `Dockerfile` and `cms/Dockerfile` -> `node:24-alpine` (digest-pinned via `docker buildx imagetools inspect`); `node-version: '20'` -> `'24'` in `test.yml` (frontend-tests, e2e-tests) and `frontend-container-deploy.yml` (run-tests, lhci, chromatic); `package.json` `engines.node` -> `">=24.15.0"` (new field); new `.nvmrc` (`24.15`). Docs updated: `.github/CONTRIBUTING.md` ("Node.js 24.15+"), `docs/UPDATE_GUIDE.md` (its worked example now shows a 24 -> 26 upgrade).
 - **isomorphic-dompurify:** loosened `~3.19.0` -> `^3.23.0` (still within the 3.x line, not the 4.x major). This is *not* a Node-floor-neutral bump: 3.20 already moved the dependency chain to jsdom 30 / undici 8, which requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — so `engines.node`/`.nvmrc` above were raised to `24.15.0`/`24.15` specifically to satisfy this, not just "Node 24". Dependabot PR #75 separately bumps to `4.3.0` (a semver-major that the project's own release notes admit should have been a major given this same Node-floor change), which is a materially different change; left open for separate review rather than duplicated here. Verification note: local `npm test`/`npm run build` ran on Node 24.13.0 (below the 24.15 floor — non-fatal `EBADENGINE` warnings only), while the Docker image and CI's `setup-node '24'` resolve to Node 24.21.x, which satisfies it.
+
+  **Update (2026-09-23):** superseded by Decision 13. PR #75 merged, `package.json` now carries `isomorphic-dompurify ^4.3.0`.
 - **extract-zip (2 Dependabot alerts, dev-only via `@lhci/cli` -> `lighthouse` -> `puppeteer-core`):** re-checked under Node 24. `@lhci/cli` latest on the registry is still `0.15.1` (unchanged) and pins `lighthouse` to the exact version `12.6.1`, which pins `puppeteer-core ^24.10.0` (the last line still using `extract-zip` to unpack downloaded Chrome archives). Standalone `lighthouse@latest` (13.5.0) has moved to `puppeteer-core ^25.9.0` (Node >=22.12, satisfied by Node 24) which drops `extract-zip`, but `@lhci/cli` has not picked up a lighthouse 13 release. Forcing it via an `overrides` entry would jump `@lhci/cli`'s internal lighthouse dependency across a major version with no verification that `@lhci/cli`'s CLI/API usage still works against it. **Not applied** — remains an accepted dev-only risk (see Decision 7); revisit when `@lhci/cli` ships a release built on lighthouse >=13.
 - **Deploy workflow trigger fix:** `push.branches` changed from `[main]` to `[master]` in all three `*-container-deploy.yml` files (they already had `workflow_dispatch`). To keep this safe for forks/template users who haven't provisioned Azure, every Azure-touching job (`build-and-push`, `deploy`, `healthcheck`, `tag-latest`, `rollback`) is now gated with `if: vars.AZURE_DEPLOY_ENABLED == 'true'` (combined with the existing `success()`/`failure()` conditions where present). In `frontend-container-deploy.yml`, the same gate was also added to `lhci` and `chromatic` (they don't touch Azure, but once the trigger runs on every `master` push they'd otherwise fail with no `lighthouserc`/Chromatic project configured); `deploy` already `needs: [build-and-push, lhci, chromatic]`, so with the variable unset every job in the chain is skipped as a unit. Unset or `false`, these jobs are **skipped** (neutral), not failed. Documented as a new "Deploy Gate" section in `.github/REPO_VARIABLES.md`.
 - **CI hygiene bundled in:** added `token: ${{ secrets.CODECOV_TOKEN }}` to both `codecov-action` steps in `test.yml` (secret does not currently exist in the repo — see Consequences); added `include-hidden-files: true` to the `e2e/.auth/*.png` screenshot upload step (the directory is dot-prefixed and was silently excluded by the default hidden-file filter).
@@ -147,7 +198,7 @@ Node 20 removal from hosted runners makes this non-optional; Node 24 is the curr
 
 | Alternative | Why Rejected |
 |------------|-------------|
-| Jump isomorphic-dompurify straight to `^4` (matching PR #75) | Out of scope for this PR per the task brief; PR #75 already covers it and should be reviewed on its own, not silently duplicated |
+| Jump isomorphic-dompurify straight to `^4` (matching PR #75) | Out of scope for this PR per the task brief; PR #75 already covers it and should be reviewed on its own, not silently duplicated. **Update (2026-09-23):** PR #75 merged the same day; see Decision 13. |
 | Force `overrides.lighthouse` to `^13` to clear extract-zip now | `@lhci/cli` 0.15.1 was built and tested against lighthouse 12's API; a major-version override with no upstream release backing it is exactly the kind of "apply only if non-breaking" case that isn't verifiable without deep testing of `@lhci/cli` internals |
 | Delete/disable the deploy workflows instead of gating them | They are correct and needed once Azure is provisioned; gating preserves them for the primary deployment while keeping forks green |
 | Leave deploy workflows targeting `main` | They would continue to silently never run on push, defeating their purpose |
@@ -157,6 +208,7 @@ Node 20 removal from hosted runners makes this non-optional; Node 24 is the curr
 - **User action required:** create the `CODECOV_TOKEN` secret (`gh secret list` shows none exists) or coverage uploads keep failing silently (`fail_ci_if_error: false` already masks this). Set the `AZURE_DEPLOY_ENABLED` repository variable to `true` (plus the existing Azure secrets/variables in `REPO_VARIABLES.md`) to turn deploys back on for the primary repo.
 - Revisit the isomorphic-dompurify `^4` major and the extract-zip/`@lhci/cli` chain together — both were deferred for the same "no verified-safe path yet" reason, and Node 24 now satisfies the Node-floor requirement for both if/when upstream catches up.
 - Follow-up: PR #75 (isomorphic-dompurify -> 4.3.0) needs its own review; it is not superseded by this change.
+- **Update (2026-09-23):** PR #75 merged (isomorphic-dompurify -> `^4.3.0`); the extract-zip/`@lhci/cli` chain remains open and unresolved upstream — see Decision 13.
 - Verified: `node -v` (24.x locally), `npx -y npm@10 ci`, `npm audit --omit=dev --audit-level=high`, `npm run test:ci`, `npm run build`, `npm run build-storybook`, `npm run lint`, Docker builds of the root and `cms/` Dockerfiles, and YAML-parsed every workflow plus `dependabot.yml`.
 
 ### Files Changed
@@ -305,6 +357,8 @@ Fold the twelve Dependabot PRs (#12, #49, #53, #54, #56, #57, #58, #62, #63, #64
 
 Result: production audit gate **0 vulnerabilities**; Dependabot 70 → 3 open (extract-zip ×2 accepted, esbuild ×1 deferred); full `npm audit` 13 (7 low, 6 high), all dev-only.
 
+**Update (2026-09-23):** esbuild deferral resolved — PR #84 bumped `esbuild` to `0.28.2`; lockfile confirmed to resolve only that version tree-wide (no other esbuild version present). The `isomorphic-dompurify ~3.19.0` pin was superseded by Decision 10 (`^3.23.0`) and then PR #75 (`^4.3.0`). The `extract-zip` acceptance remains open (still blocked on `@lhci/cli` shipping on `lighthouse` >=13); see Decision 13 for the current full-audit tally (12: 6 low, 6 high, all dev-only, 0 in production).
+
 ### Alternatives Evaluated
 
 | Alternative | Why Rejected |
@@ -351,6 +405,8 @@ Resolve what is safely fixable with `package.json` `overrides` (pin the *transit
 - **Accept (no action) — `postcss` / `next`** (2 MODERATE): the vulnerable `postcss` is bundled inside `next`; the only `npm audit` fix is downgrading Next.js to 9.x. Not worth a framework downgrade for a moderate advisory; the top-level `postcss` is already patched (8.5.15).
 
 Result: audit dropped 13 → 8 (0 high, 2 moderate, 6 low); production audit gate stays green.
+
+**Update (2026-09-23):** superseded in part by Decision 7 (2026-09-22), which bumped `next` to `^16.3.6` and resolved the bundled-postcss risk accepted here as part of clearing the production audit gate's critical advisories.
 
 > **Lockfile tooling note:** CI runs Node 20 (npm 10). npm 11 (Node 22/24) resolves the `@emnapi` WASM-runtime optional-dependency subtree differently and produces a lockfile CI's `npm ci` rejects (EUSAGE). Regenerate the lockfile with `npx npm@10 install` and verify `npx npm@10 ci --dry-run` exits 0.
 
