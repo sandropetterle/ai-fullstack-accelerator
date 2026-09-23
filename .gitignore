@@ -26,6 +26,7 @@
 *.p12
 *.key
 *.jks
+*.stackdump
 
 # debug
 npm-debug.log*
