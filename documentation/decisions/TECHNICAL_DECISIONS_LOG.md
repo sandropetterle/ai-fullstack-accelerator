@@ -42,7 +42,7 @@ Same principle as every prior security decision in this log: what's actually shi
 |------------|-------------|
 | Silently edit Decisions 6/7/10 in place to reflect current state | Violates the append-only/no-rewritten-history log discipline; a reader auditing history would lose the original reasoning that was correct at the time |
 | Drop `cancel-in-progress` entirely (always `false`) | Loses the useful auto-cancel-on-superseding-push behavior for PR branches, which saves CI minutes on rapid-iteration pushes |
-| Remove the `flatted`/`serialize-javascript` overrides since no tracked alert justifies them | They still resolve to patched versions of dependencies with known historical CVEs; removing them re-exposes the risk for no benefit, and their patched-version ranges (`>=3.4.0`, `>=7.0.3`) are non-breaking for their consumers |
+| Remove the `flatted`/`serialize-javascript` overrides since no tracked alert justifies them | `flatted` still resolves to a patched 3.4.2; `serialize-javascript` is inert today but would guard a future transitive re-entry. Removing either saves nothing, and both floors are non-breaking for their consumers |
 
 ### Consequences
 
