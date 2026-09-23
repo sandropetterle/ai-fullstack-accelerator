@@ -31,8 +31,14 @@ npm run build-storybook  # Static Storybook build
 ```bash
 dotnet run --project backend/src/Accelerator.Api    # Start API at http://localhost:5255
 dotnet build && dotnet test                          # Build and test (from backend/)
-dotnet ef database update --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
+
+# EF Core migrations: one set per provider (Decision 15). Add every model change to BOTH.
+# SQLite (dev default, no connection string) -> backend/src/Accelerator.Data/Migrations
 dotnet ef migrations add MigrationName --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
+dotnet ef database update --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
+# SQL Server -> backend/src/Accelerator.Data.SqlServer/Migrations (the connection string after `--` selects the provider)
+dotnet ef migrations add MigrationName --project backend/src/Accelerator.Data.SqlServer --startup-project backend/src/Accelerator.Api -- --ConnectionStrings:DefaultConnection "Server=localhost,1433;Database=AcceleratorDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+dotnet ef database update --project backend/src/Accelerator.Data.SqlServer --startup-project backend/src/Accelerator.Api -- --ConnectionStrings:DefaultConnection "<same connection string>"
 ```
 
 Swagger (dev only): http://localhost:5255/swagger
@@ -52,7 +58,8 @@ docker compose down                    # Stop all containers
 Api/ (Controllers, DTOs, Middleware, Validators)
   ↓ Infrastructure/ (AddInfrastructure: AppInsights, MemoryCache, TimeProvider, HealthChecks, RateLimiter)
   ↓ Core/ (Entities, Services, Interfaces, Enums)
-  ↓ Data/ (Repositories, DbContext, Migrations)
+  ↓ Data/ (Repositories, DbContext, SQLite Migrations)
+Data.SqlServer/ (SQL Server Migrations only; selected via MigrationsAssembly when a connection string is set)
 ```
 
 ### Frontend

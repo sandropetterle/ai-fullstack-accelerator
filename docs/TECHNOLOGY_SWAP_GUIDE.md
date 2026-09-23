@@ -82,7 +82,7 @@ Authentication__RequireHttpsMetadata=true
 
 4. Remove `Microsoft.EntityFrameworkCore.SqlServer` from `Accelerator.Data.csproj` if not keeping SQL Server
 
-5. Regenerate migrations (PostgreSQL has different SQL dialect):
+5. Regenerate migrations (PostgreSQL has different SQL dialect). Migrations are per provider (Decision 15): the SQL Server set lives in `backend/src/Accelerator.Data.SqlServer` and is selected in `Program.cs` with `MigrationsAssembly("Accelerator.Data.SqlServer")`. Replace that project (or add an `Accelerator.Data.Postgres` one), point `MigrationsAssembly(...)` at it, and generate its `InitialCreate` with `--project <that project>` plus `-- --ConnectionStrings:DefaultConnection "<PostgreSQL connection string>"`. The commands below regenerate the default set in `Accelerator.Data` (the SQLite dev set), so use them only if PostgreSQL is also replacing SQLite for local development:
    ```bash
    dotnet ef migrations remove --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
    dotnet ef migrations add InitialCreate --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api

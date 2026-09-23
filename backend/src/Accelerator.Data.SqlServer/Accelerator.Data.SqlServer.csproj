@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    SQL Server migrations for ApplicationDbContext (Decision 15, issue #87).
+    The SQLite migrations used in local development stay in Accelerator.Data/Migrations.
+    Program.cs selects this assembly via MigrationsAssembly(...) when a SQL Server
+    connection string is configured.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Accelerator.Data\Accelerator.Data.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

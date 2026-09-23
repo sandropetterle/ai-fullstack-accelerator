@@ -244,7 +244,7 @@ git cherry-pick <commit-sha>         # take a specific commit only
 **What to watch for when merging upstream:**
 - Conflicts in `lib/api/types.ts` and `lib/api/mappers.ts` — these change when the example entity evolves
 - Conflicts in `backend/src/Accelerator.*/` — if you ran `rename-entity.sh`, the namespace will differ
-- New migrations in `backend/src/Accelerator.Data/Migrations/` — apply these after merging
+- New migrations in `backend/src/Accelerator.Data/Migrations/` (SQLite) and `backend/src/Accelerator.Data.SqlServer/Migrations/` (SQL Server) — apply these after merging
 - New `.env.example` entries — check and add to your `.env.local`
 
 If the conflict surface is large, cherry-pick specific improvements rather than doing a full merge.

@@ -11,6 +11,7 @@ WORKDIR /src
 COPY ["src/Accelerator.Api/Accelerator.Api.csproj", "src/Accelerator.Api/"]
 COPY ["src/Accelerator.Core/Accelerator.Core.csproj", "src/Accelerator.Core/"]
 COPY ["src/Accelerator.Data/Accelerator.Data.csproj", "src/Accelerator.Data/"]
+COPY ["src/Accelerator.Data.SqlServer/Accelerator.Data.SqlServer.csproj", "src/Accelerator.Data.SqlServer/"]
 COPY ["src/Accelerator.Infrastructure/Accelerator.Infrastructure.csproj", "src/Accelerator.Infrastructure/"]
 
 # Restore dependencies

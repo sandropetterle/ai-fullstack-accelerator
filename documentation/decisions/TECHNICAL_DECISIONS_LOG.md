@@ -4,11 +4,69 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **14 active decisions | 0 archived**
+> **15 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
 
 ---
+
+## Decision 15: One EF Core migration set per database provider
+
+**Date:** 2026-09-23
+**Title:** Keep the SQLite migrations in `Accelerator.Data`; add an `Accelerator.Data.SqlServer` project holding SQL Server migrations, selected with `MigrationsAssembly(...)`; gate both sets in CI
+**Category:** Architecture / Database
+**Status:** Active
+
+### Context / Problem
+
+Issue [#87](https://github.com/sandropetterle/ai-fullstack-accelerator/issues/87), tracked as a Known Limitation in Decision 14. `Program.cs` picks the provider at runtime (Decision 5): no `ConnectionStrings:DefaultConnection` means SQLite, a connection string means SQL Server. But the only migration set, `backend/src/Accelerator.Data/Migrations`, was generated against SQLite (`TEXT` Guid columns, SQLite model snapshot). Pointed at SQL Server, EF Core 10 compares the SQLite snapshot with the SQL Server model and refuses to migrate. Reproduced on this branch by temporarily pointing the SQL Server registration back at the `Accelerator.Data` set: `dotnet ef migrations has-pending-model-changes` reported "Changes have been made to the model since the last migration", and `dotnet ef database update` threw `InvalidOperationException` for `PendingModelChangesWarning`. So the documented production database had no working migration path.
+
+### Decision
+
+- **Separate migrations assembly for SQL Server**, following Microsoft's "Migrations with Multiple Providers" guidance. New project `backend/src/Accelerator.Data.SqlServer` (references `Accelerator.Data`, contains only `Migrations/`). Its `InitialCreate` was generated with `dotnet ef migrations add` against the same `ApplicationDbContext` model, so the schema and `HasData` seed rows match the SQLite set: Guid columns are `uniqueidentifier`, `DateTime` columns are `datetime2`, and the seed inserts 3 articles, 9 tags and 9 article-tag rows.
+- **`Program.cs`**: the SQL Server branch now calls `sqlOptions.MigrationsAssembly("Accelerator.Data.SqlServer")`. The SQLite branch is untouched and keeps using the default migrations assembly (`Accelerator.Data`), so local dev, `scripts/setup-project.*` and the existing SQLite migration history are unchanged.
+- **`Accelerator.Api` references `Accelerator.Data.SqlServer`** so the assembly is built, published and present in the container. `backend/Dockerfile` copies the new `.csproj` before `dotnet restore`; the project is added to `Accelerator.sln`.
+- **SQL Server design-time commands pass the connection string after `--`** (`-- --ConnectionStrings:DefaultConnection "..."`), because that is what makes `Program.cs` register the SQL Server provider. `--connection` alone keeps the SQLite provider and fails with "Connection string keyword 'server' is not supported"; `documentation/operations/RUNBOOK.md` used that form and is corrected.
+- **New CI job `migrations` in `test.yml`** (issue #87's regression guard): runs a `mssql/server:2022-latest` service container, applies each set to a fresh database with `dotnet ef database update`, and runs `dotnet ef migrations has-pending-model-changes` for both providers. `test-summary` fails if it fails.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Provider-specific folders/namespaces inside `Accelerator.Data` | EF Core discovers migrations per assembly by `[DbContext]` attribute, so two sets for the same context in one assembly collide; separating them in one assembly requires a derived `DbContext` type per provider, which changes DI registration and every repository's context type |
+| A derived `SqlServerApplicationDbContext` with its own migrations | Works, but spreads a second context type through DI and tests for no benefit over a separate assembly, and the assembly split is what issue #87 proposed |
+| Single provider-agnostic migration set (hand-edited column types) | Fragile: every future `migrations add` regenerates provider-specific types and snapshots, and EF 10's `PendingModelChangesWarning` would fire on whichever provider did not generate it |
+| Use SQL Server for local dev too (drop SQLite migrations) | Forces Docker on every contributor and reverses Decision 5's zero-setup local dev |
+| `EnsureCreated()` on SQL Server instead of migrations | No upgrade path for existing production databases; incompatible with migrations history |
+
+### Consequences
+
+- SQL Server has a working migration path: `dotnet ef database update --project backend/src/Accelerator.Data.SqlServer ...` applies cleanly to a fresh database and the API serves seeded data from it.
+- **Every model change now needs two migrations**, one per set, with the same name. CLAUDE.md, README ("Database Migrations"), `documentation/architecture/DATA_MODEL.md`, `docs/GETTING_STARTED.md`, `docs/UPDATE_GUIDE.md` and `docs/TECHNOLOGY_SWAP_GUIDE.md` show both commands. The CI `migrations` job fails if either set lags the model.
+- The two sets have different migration IDs (timestamps). That is expected, since each database only ever sees its own set's history table.
+- Production still does not auto-migrate on startup (the `MigrateAsync()` call remains Development-only); the RUNBOOK command is the supported path.
+- `scripts/rename-entity.sh` renames the new project, folder and the `"Accelerator.Data.SqlServer"` string along with every other `Accelerator` occurrence, the same way it handles `Accelerator.Data`.
+
+### Files Changed
+
+- `backend/src/Accelerator.Data.SqlServer/Accelerator.Data.SqlServer.csproj` — new project
+- `backend/src/Accelerator.Data.SqlServer/Migrations/20260923122102_InitialCreate.cs`, `.Designer.cs`, `ApplicationDbContextModelSnapshot.cs` — generated SQL Server set
+- `backend/src/Accelerator.Api/Program.cs` — `MigrationsAssembly("Accelerator.Data.SqlServer")` on the SQL Server branch
+- `backend/src/Accelerator.Api/Accelerator.Api.csproj` — project reference
+- `backend/Accelerator.sln` — project added under `src`
+- `backend/Dockerfile` — copy the new `.csproj` before restore
+- `.github/workflows/test.yml` — new `migrations` job; wired into `test-summary`
+- `CLAUDE.md`, `README.md`, `documentation/architecture/DATA_MODEL.md`, `documentation/operations/RUNBOOK.md`, `docs/GETTING_STARTED.md`, `docs/UPDATE_GUIDE.md`, `docs/TECHNOLOGY_SWAP_GUIDE.md` — per-provider migration commands
+- `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` — this entry; one-line resolution note in Decision 14; header count
+
+### Verified
+
+- `dotnet build` (backend/, `--no-incremental`): 0 warnings, 0 errors. `dotnet test`: 109/109 passed (Core 28, Integration 37, Api 44).
+- SQLite: deleted `accelerator.db`, `dotnet ef database update --project backend/src/Accelerator.Data ...` applied `20260323202903_InitialCreate` to a fresh file (3 articles, 9 tags, 9 article-tag rows); `has-pending-model-changes` reports "No changes have been made to the model since the last migration."
+- SQL Server 2022 (`docker compose up -d`, `sqlserver` service): `dotnet ef database update` with the new set applied `20260923122102_InitialCreate` to a fresh `AcceleratorDb` (3/9/9 rows; `Id`/`ArticlesId`/`TagsId` columns `uniqueidentifier`, `CreatedDate`/`UpdatedDate` `datetime2`); `has-pending-model-changes` reports no changes.
+- API run in Development against SQL Server (startup `MigrateAsync()` included): `GET /api/articles` returned 200 with `totalCount: 3` and each article's seeded tags; `GET /api/articles/getting-started-clean-architecture` returned 200.
+- `docker build` of `backend/Dockerfile` succeeds; the runtime image's `/app` contains `Accelerator.Data.SqlServer.dll`.
+- Before the fix (SQL Server registration pointed at the `Accelerator.Data` set): `has-pending-model-changes` reported pending changes and `database update` threw on `PendingModelChangesWarning`, confirming the #87 failure on EF Core 10.0.12.
 
 ## Decision 14: Strapi CMS is an optional, bring-your-own integration
 
@@ -32,6 +90,8 @@ An audit of the committed tree found `cms/` contains only `Dockerfile` and `.doc
 ### Known Limitation: EF Core migrations are SQLite-generated
 
 Restating and tracking what Decision 8's Consequences already flagged: the single EF Core migrations set in `backend/src/Accelerator.Data/Migrations` was generated against the SQLite provider and does not apply cleanly to SQL Server (`PendingModelChangesWarning` on EF 10; `InvalidCastException` on Guid columns previously on EF 8). SQL Server needs its own provider-specific migrations assembly, which does not exist yet. **Tracking issue: [#87](https://github.com/sandropetterle/ai-fullstack-accelerator/issues/87).**
+
+> **Update (2026-09-23):** #87 is resolved by Decision 15 (separate `Accelerator.Data.SqlServer` migrations assembly).
 
 ### Alternatives Evaluated
 

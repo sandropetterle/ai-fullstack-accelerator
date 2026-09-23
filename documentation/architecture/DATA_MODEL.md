@@ -72,7 +72,7 @@ The accelerator ships with these example categories. Replace them via `scripts/r
 
 - **Development:** SQLite at `backend/src/Accelerator.Api/accelerator.db`
 - **Production:** Azure SQL Server (applied via EF Core migrations — **not** auto-applied on startup in production)
-- **Migrations:** Code-first, stored in `Accelerator.Data/Migrations/`
+- **Migrations:** Code-first, one set per provider (Decision 15): SQLite in `Accelerator.Data/Migrations/`, SQL Server in `Accelerator.Data.SqlServer/Migrations/`. `Program.cs` selects the SQL Server set with `MigrationsAssembly("Accelerator.Data.SqlServer")` when a connection string is configured.
 
 Indexes defined on:
 - `Article.Slug` (unique)
@@ -141,16 +141,31 @@ erDiagram
 
 ## 7. Migration Commands
 
+Every model change needs a migration in **both** sets. The provider is chosen by `Program.cs`: no `ConnectionStrings:DefaultConnection` means SQLite, a connection string means SQL Server. Pass it after `--` so the design-time host picks the SQL Server provider (the `--connection` option alone only swaps the connection string on the SQLite provider).
+
 ```bash
 # From repo root
+
+# SQLite (dev default) -> backend/src/Accelerator.Data/Migrations
+dotnet ef migrations add MigrationName \
+  --project backend/src/Accelerator.Data \
+  --startup-project backend/src/Accelerator.Api
 dotnet ef database update \
   --project backend/src/Accelerator.Data \
   --startup-project backend/src/Accelerator.Api
 
-# Add a new migration
+# SQL Server -> backend/src/Accelerator.Data.SqlServer/Migrations
 dotnet ef migrations add MigrationName \
-  --project backend/src/Accelerator.Data \
-  --startup-project backend/src/Accelerator.Api
+  --project backend/src/Accelerator.Data.SqlServer \
+  --startup-project backend/src/Accelerator.Api \
+  -- --ConnectionStrings:DefaultConnection "Server=localhost,1433;Database=AcceleratorDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+dotnet ef database update \
+  --project backend/src/Accelerator.Data.SqlServer \
+  --startup-project backend/src/Accelerator.Api \
+  -- --ConnectionStrings:DefaultConnection "<SQL Server connection string>"
+
+# Check a set is in sync with the model (same arguments as above)
+dotnet ef migrations has-pending-model-changes --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
 ```
 
 See [../../deployment/database-migration.md](../../deployment/database-migration.md) for production migration procedures.
