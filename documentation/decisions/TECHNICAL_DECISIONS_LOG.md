@@ -4,9 +4,45 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **16 active decisions | 0 archived**
+> **17 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 17: Protected endpoints return 401 when no OIDC authority is configured
+
+**Date:** 2026-09-24
+**Title:** Register a never-authenticating default scheme when `Authentication:Authority` is empty
+**Category:** Security
+**Status:** Active
+
+### Context / Problem
+
+`docs/ARCHITECTURE_DECISIONS.md` §6 said that without an OIDC provider (local dev) "protected endpoints return 401". They returned **500**: `Program.cs` registered no authentication scheme at all when `Authentication:Authority` was empty, so `[Authorize]` endpoints threw `InvalidOperationException: No authenticationScheme was specified, and there was no DefaultChallengeScheme found`, which `ExceptionHandlingMiddleware` turned into a 500. The existing 401 tests passed only because the test host registers its own `TestAuth` scheme, so the no-authority path was never exercised.
+
+### Decision
+
+When `Authentication:Authority` is empty, register `UnconfiguredAuthenticationHandler` (`backend/src/Accelerator.Api/Authentication/`) as the default scheme. It always returns `AuthenticateResult.NoResult()`, so the standard challenge (401) and forbid (403) responses apply. The JWT bearer branch is unchanged.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Always register JWT bearer, even with an empty authority | Bearer validation would try to fetch OIDC metadata from an empty authority on the first protected request; failure mode depends on the handler, not on a deliberate choice |
+| Fail startup when no authority is set | Breaks the zero-setup local dev path (§3, §6) that the template promises |
+| Change only the docs to say 500 | A 500 for "not signed in" is a bug, not a design choice; clients and monitoring treat 5xx as server faults |
+
+### Consequences
+
+- Local dev without an identity provider: public endpoints work, protected ones return 401, and nothing logs a spurious exception.
+- `UnconfiguredAuthenticationTests` boots the API without the test scheme and asserts 401 on `POST /api/articles` and `GET /api/auth/me`, and 200 on a public endpoint. Verified red (500) before the fix, green after.
+
+### Files Changed
+
+- `backend/src/Accelerator.Api/Authentication/UnconfiguredAuthenticationHandler.cs` (new), `Program.cs`
+- `backend/tests/Accelerator.Api.Tests/IntegrationTests/UnconfiguredAuthenticationTests.cs` (new)
+- `docs/ARCHITECTURE_DECISIONS.md` §6
 
 ---
 

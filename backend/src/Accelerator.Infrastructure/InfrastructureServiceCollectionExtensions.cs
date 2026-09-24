@@ -32,12 +32,14 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 
-        // Rate limiting — protect against abuse
+        // Rate limiting — protect against abuse.
+        // Each policy is a single bucket shared by all clients (not partitioned per IP) and counted
+        // per replica. See docs/ARCHITECTURE_DECISIONS.md §8.
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            // Fixed window: 100 requests per minute per IP
+            // Fixed window: 100 requests per minute
             options.AddFixedWindowLimiter("fixed", config =>
             {
                 config.Window = TimeSpan.FromMinutes(1);
@@ -56,7 +58,7 @@ public static class InfrastructureServiceCollectionExtensions
                 config.QueueLimit = 5;
             });
 
-            // Strict limiter for vote/action endpoint: 10 per minute per IP
+            // Strict limiter for vote/action endpoint: 10 per minute
             options.AddFixedWindowLimiter("action", config =>
             {
                 config.Window = TimeSpan.FromMinutes(1);
