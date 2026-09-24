@@ -10,7 +10,7 @@ Decisions are ordered thematically, not chronologically. The source of truth for
 
 **Decision:** The backend is structured in four layers — `Api`, `Core`, `Infrastructure`, `Data` — with a strict dependency rule: outer layers depend on inner layers, never the reverse.
 
-**Why:** Clean Architecture's dependency rule makes the system testable at every level. The `Core` layer (entities, services, interfaces) has zero framework dependencies — it can be tested with plain unit tests, no database or HTTP context required. Swapping the database (SQLite → SQL Server → PostgreSQL) or adding a new delivery mechanism requires only changes to `Data` or `Api`; `Core` is untouched.
+**Why:** Clean Architecture's dependency rule makes the system testable at every level. The `Core` layer (entities, services, interfaces) has no framework or vendor dependencies — its only package reference is `Microsoft.Extensions.Caching.Abstractions` (interfaces only). Anything vendor-specific sits behind a Core-owned interface: telemetry goes through `IAppTelemetry`, implemented over Application Insights in `Infrastructure`. Core can be tested with plain unit tests, no database or HTTP context required. Swapping the database (SQLite → SQL Server → PostgreSQL) or adding a new delivery mechanism requires only changes to `Data` or `Api`; `Core` is untouched.
 
 **The layers:**
 ```
@@ -19,6 +19,8 @@ Infrastructure/ (AppInsights, MemoryCache, TimeProvider, HealthChecks, RateLimit
 Core/           (Entities, Services, Interfaces, Enums) — no framework dependencies
 Data/           (Repositories, DbContext, Migrations)
 ```
+
+**Enforced, not just documented:** `backend/tests/Accelerator.Core.Tests/Architecture/CoreDependencyRuleTests.cs` fails the build if Core references ASP.NET Core, EF Core or Application Insights.
 
 **Trade-off:** More files and indirection than a minimal API. The overhead pays off once the codebase grows beyond a handful of endpoints.
 

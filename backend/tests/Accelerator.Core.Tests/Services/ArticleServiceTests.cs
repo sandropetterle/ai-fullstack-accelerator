@@ -4,9 +4,6 @@ using Accelerator.Core.Interfaces;
 using Accelerator.Core.Services;
 using Accelerator.Core.ValueObjects;
 using FluentAssertions;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Channel;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 
@@ -19,8 +16,7 @@ public class ArticleServiceTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly IMemoryCache _cache;
     private readonly FakeTimeProvider _timeProvider;
-    private readonly FakeTelemetryChannel _telemetryChannel;
-    private readonly TelemetryClient _telemetryClient;
+    private readonly FakeAppTelemetry _telemetry;
     private readonly ArticleService _sut;
 
     public ArticleServiceTests()
@@ -30,9 +26,7 @@ public class ArticleServiceTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _cache = new MemoryCache(new MemoryCacheOptions());
         _timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero));
-        _telemetryChannel = new FakeTelemetryChannel();
-        var telemetryConfig = new TelemetryConfiguration { TelemetryChannel = _telemetryChannel };
-        _telemetryClient = new TelemetryClient(telemetryConfig);
+        _telemetry = new FakeAppTelemetry();
 
         _sut = new ArticleService(
             _articleRepositoryMock.Object,
@@ -40,7 +34,7 @@ public class ArticleServiceTests
             _unitOfWorkMock.Object,
             _cache,
             _timeProvider,
-            _telemetryClient);
+            _telemetry);
     }
 
     #region GetArticlesAsync Tests
@@ -541,10 +535,7 @@ public class ArticleServiceTests
         await _sut.GetBySlugAsync(slug);
 
         // Assert
-        _telemetryClient.Flush();
-        var evt = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Single();
+        var evt = _telemetry.Events.Single();
         evt.Name.Should().Be("ArticleViewed");
         evt.Properties["slug"].Should().Be(slug);
     }
@@ -561,9 +552,7 @@ public class ArticleServiceTests
         await _sut.GetBySlugAsync("nonexistent");
 
         // Assert
-        _telemetryClient.Flush();
-        _telemetryChannel.Items.OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Should().BeEmpty();
+        _telemetry.Events.Should().BeEmpty();
     }
 
     [Fact]
@@ -587,10 +576,7 @@ public class ArticleServiceTests
         await _sut.CreateArticleAsync(article, new List<string>());
 
         // Assert
-        _telemetryClient.Flush();
-        var evt = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Single();
+        var evt = _telemetry.Events.Single();
         evt.Name.Should().Be("ArticleCreated");
     }
 
@@ -607,10 +593,7 @@ public class ArticleServiceTests
         await _sut.VoteForArticleAsync(id);
 
         // Assert
-        _telemetryClient.Flush();
-        var evt = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Single();
+        var evt = _telemetry.Events.Single();
         evt.Name.Should().Be("ArticleVoted");
         evt.Properties["articleId"].Should().Be(id.ToString());
     }
@@ -629,10 +612,7 @@ public class ArticleServiceTests
         await _sut.GetArticlesAsync(1, 10, null, null, null, "test");
 
         // Assert
-        _telemetryClient.Flush();
-        var evt = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Single();
+        var evt = _telemetry.Events.Single();
         evt.Name.Should().Be("ArticleSearched");
         evt.Properties["search"].Should().Be("test");
     }
@@ -653,10 +633,7 @@ public class ArticleServiceTests
         await _sut.UpdateArticleAsync(id, updated, new List<string>());
 
         // Assert
-        _telemetryClient.Flush();
-        var evt = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.EventTelemetry>()
-            .Single();
+        var evt = _telemetry.Events.Single();
         evt.Name.Should().Be("ArticleUpdated");
     }
 
@@ -669,16 +646,13 @@ public class ArticleServiceTests
 
         // Act — first call (cache miss), second call (cache hit)
         await _sut.GetFeaturedArticlesAsync();
-        _telemetryChannel.Items.Clear();
+        _telemetry.Metrics.Clear();
         await _sut.GetFeaturedArticlesAsync();
 
         // Assert — second call should record metric value 1 (hit)
-        _telemetryClient.Flush();
-        var metric = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.MetricTelemetry>()
-            .Single();
+        var metric = _telemetry.Metrics.Single();
         metric.Name.Should().Be("FeaturedArticlesCacheHit");
-        metric.Sum.Should().Be(1);
+        metric.Value.Should().Be(1);
     }
 
     [Fact]
@@ -692,12 +666,9 @@ public class ArticleServiceTests
         await _sut.GetTrendingArticlesAsync();
 
         // Assert — first call should record metric value 0 (miss)
-        _telemetryClient.Flush();
-        var metric = _telemetryChannel.Items
-            .OfType<Microsoft.ApplicationInsights.DataContracts.MetricTelemetry>()
-            .Single();
+        var metric = _telemetry.Metrics.Single();
         metric.Name.Should().Be("TrendingArticlesCacheHit");
-        metric.Sum.Should().Be(0);
+        metric.Value.Should().Be(0);
     }
 
     [Fact]
@@ -714,8 +685,8 @@ public class ArticleServiceTests
         await _sut.GetArticlesAsync(1, 10, null, null, null, null);
 
         // Assert
-        _telemetryClient.Flush();
-        _telemetryChannel.Items.Should().BeEmpty();
+        _telemetry.Events.Should().BeEmpty();
+        _telemetry.Metrics.Should().BeEmpty();
     }
 
     #endregion
@@ -747,17 +718,17 @@ public class ArticleServiceTests
 }
 
 /// <summary>
-/// Fake Application Insights channel that captures telemetry items in memory for assertions
+/// Fake IAppTelemetry that captures events and metrics in memory for assertions
 /// </summary>
-public class FakeTelemetryChannel : ITelemetryChannel
+public class FakeAppTelemetry : IAppTelemetry
 {
-    public List<ITelemetry> Items { get; } = new();
-    public bool? DeveloperMode { get; set; }
-    public string? EndpointAddress { get; set; }
+    public List<(string Name, IDictionary<string, string> Properties)> Events { get; } = new();
+    public List<(string Name, double Value)> Metrics { get; } = new();
 
-    public void Send(ITelemetry item) => Items.Add(item);
-    public void Flush() { }
-    public void Dispose() { }
+    public void TrackEvent(string name, IDictionary<string, string>? properties = null) =>
+        Events.Add((name, properties ?? new Dictionary<string, string>()));
+
+    public void TrackMetric(string name, double value) => Metrics.Add((name, value));
 }
 
 /// <summary>

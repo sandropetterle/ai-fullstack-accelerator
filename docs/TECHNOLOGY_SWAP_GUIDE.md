@@ -161,10 +161,11 @@ Authentication__RequireHttpsMetadata=true
    services.AddApplicationInsightsTelemetry(configuration);
    ```
    With your provider's registration call (e.g., OpenTelemetry, Datadog, New Relic)
-3. Remove `APPLICATIONINSIGHTS_CONNECTION_STRING` from env vars / Bicep parameters
+3. Replace `ApplicationInsightsAppTelemetry.cs` in `Accelerator.Infrastructure` with an `IAppTelemetry` implementation for your provider, and update its registration in `AddInfrastructure()`
+4. Remove `APPLICATIONINSIGHTS_CONNECTION_STRING` from env vars / Bicep parameters
 
 **What to leave alone:**
-- No `TelemetryClient` is injected directly into application code — all telemetry goes through the ASP.NET Core middleware pipeline
+- `Accelerator.Core` — services emit business events and metrics through the Core-owned `IAppTelemetry` interface and never reference a telemetry SDK (enforced by `CoreDependencyRuleTests`)
 - Health check endpoints (`/health`, `/health/ready`) — these are provider-independent
 
 **Gotchas:**
