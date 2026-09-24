@@ -35,13 +35,13 @@ import type {
 
 export const MOCK_ARTICLE: Article = {
   id: 'b0000000-0000-0000-0000-000000000001',
-  title: 'Getting Started with AI Fullstack Development',
+  title: 'Getting Started with the AI Fullstack Accelerator',
   slug: 'getting-started-ai-fullstack',
   shortDescription:
-    'A comprehensive guide to building full-stack AI applications with Next.js, ASP.NET Core, and modern tooling.',
-  fullContent: `## Overview\n\nThis guide walks you through building a modern AI-powered full-stack application.\n\n## Prerequisites\n\n- Node.js 20+\n- .NET 8 SDK\n- Docker Desktop\n\n## Getting Started\n\n\`\`\`bash\ngit clone https://github.com/your-org/ai-fullstack-accelerator\ncd ai-fullstack-accelerator\nnpm install\n\`\`\``,
+    'A comprehensive guide to building full-stack applications with Next.js, ASP.NET Core, and modern tooling.',
+  fullContent: `## Overview\n\nThis guide walks you through building a modern full-stack application.\n\n## Prerequisites\n\n- Node.js 20+\n- .NET 8 SDK\n- Docker Desktop\n\n## Getting Started\n\n\`\`\`bash\ngit clone https://github.com/your-org/ai-fullstack-accelerator\ncd ai-fullstack-accelerator\nnpm install\n\`\`\``,
   category: 'Tutorial',
-  tags: ['nextjs', 'aspnet', 'ai', 'fullstack'],
+  tags: ['nextjs', 'aspnet', 'testing', 'fullstack'],
   author: 'Alice Chen',
   createdDate: '2024-01-15T10:00:00Z',
   updatedDate: '2024-02-20T14:30:00Z',
@@ -127,7 +127,7 @@ export const MOCK_STAT_ITEMS: CmsStatItem[] = [
 
 export const MOCK_FEATURE_CARDS: CmsFeatureCard[] = [
   { title: 'Proven Approaches', description: 'Battle-tested solutions used by leading teams.', icon: 'Shield' },
-  { title: 'AI-Powered', description: 'Optimized for AI-assisted development workflows.', icon: 'Sparkles' },
+  { title: 'AI-Assisted Development', description: 'Ships with the instructions and CI checks an AI coding assistant works within.', icon: 'Sparkles' },
   { title: 'Open Source', description: 'Community-driven and freely available to everyone.', icon: 'Code' },
 ]
 
@@ -164,7 +164,7 @@ export const MOCK_SUPPORT_ITEMS: CmsSupportItem[] = [
 export const MOCK_HERO_BLOCK: CmsHeroBlock = {
   __component: 'sections.hero',
   heading: 'AI Fullstack Accelerator',
-  subheading: 'Curated articles, guides, and resources for full-stack AI development.',
+  subheading: 'Curated articles, guides, and resources for full-stack development.',
   primaryCTA: MOCK_CTA_PRIMARY,
   secondaryCTA: MOCK_CTA_SECONDARY,
 }
@@ -184,7 +184,7 @@ export const MOCK_FEATURED_ARTICLES_BLOCK: CmsFeaturedArticlesBlock = {
 
 export const MOCK_RICH_TEXT_BLOCK: CmsRichTextBlock = {
   __component: 'sections.rich-text',
-  body: `## What is the AI Fullstack Accelerator?\n\nA curated collection of articles and guides for building AI-powered full-stack applications.\n\n### Key benefits\n\n- **Reusable** — apply approaches across projects\n- **Documented** — clear rationale for each decision\n- **Community-driven** — contributed by practitioners`,
+  body: `## What is the AI Fullstack Accelerator?\n\nA full-stack starter template: clone it, rename the example entity, and ship.\n\n### Key benefits\n\n- **Reusable** — apply approaches across projects\n- **Documented** — clear rationale for each decision\n- **Community-driven** — contributed by practitioners`,
 }
 
 export const MOCK_CTA_BANNER_BLOCK: CmsCtaBannerBlock = {
@@ -210,7 +210,7 @@ export const MOCK_TECH_STACK_BLOCK: CmsTechStackBlock = {
 export const MOCK_MISSION_BLOCK: CmsMissionBlock = {
   __component: 'sections.mission-block',
   title: 'Our Mission',
-  content: 'Accelerate AI-powered application development through a shared library of proven approaches and templates.',
+  content: 'Stop rebuilding the same scaffolding on every project: start from a working stack with the reasoning behind each choice written down.',
 }
 
 export const MOCK_OPEN_SOURCE_INFO_BLOCK: CmsOpenSourceInfoBlock = {

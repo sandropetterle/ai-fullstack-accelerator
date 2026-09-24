@@ -10,11 +10,11 @@ import { DynamicZone } from '@/lib/cms/components'
 const DEFAULT_METADATA: Metadata = {
   title: 'About | AI Fullstack Accelerator',
   description:
-    'Learn about AI Fullstack Accelerator - a modern fullstack template for building AI-powered applications.',
+    'Learn about AI Fullstack Accelerator, a full-stack starter template built with Next.js and ASP.NET Core.',
   keywords: [
     'about',
-    'AI',
     'fullstack',
+    'template',
     'accelerator',
     'Next.js',
     'ASP.NET Core',
@@ -22,7 +22,7 @@ const DEFAULT_METADATA: Metadata = {
   openGraph: {
     title: 'About | AI Fullstack Accelerator',
     description:
-      'A modern fullstack template for building AI-powered applications.',
+      'A full-stack starter template built with Next.js and ASP.NET Core.',
     url: 'https://your-domain.com/about',
   },
 }
@@ -84,8 +84,8 @@ export default async function AboutPage() {
           AI Fullstack Accelerator
         </h1>
         <p className="text-xl text-muted-foreground leading-relaxed">
-          A modern fullstack template for building AI-powered applications with Next.js and ASP.NET Core.
-          Curated by developers, for developers.
+          A full-stack starter template built with Next.js and ASP.NET Core.
+          Clone it, rename the example entity, and ship.
         </p>
       </div>
 
@@ -100,18 +100,18 @@ export default async function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-muted-foreground">
             <p>
-              In the rapidly evolving landscape of AI-assisted software development, developers
-              need proven patterns and strategies to effectively leverage AI tools in enterprise
-              contexts. Our mission is to bridge that gap.
+              Every new project rebuilds the same scaffolding: a frontend, an API, authentication,
+              a database with migrations, CI and infrastructure as code. This accelerator ships that
+              scaffolding with the reasoning behind each choice written down.
             </p>
             <p>
-              We provide a production-ready fullstack accelerator that helps teams build and ship
-              AI-powered applications faster — from architectural decisions and design patterns to
-              prompt engineering and best practices.
+              The repository is set up for AI-assisted development: it includes the instructions and
+              CI checks an AI coding assistant works within. The application itself has no AI
+              features.
             </p>
             <p>
-              Whether you&apos;re building microservices, implementing clean architecture, or exploring
-              AI-assisted code generation, you&apos;ll find practical, production-ready foundations here.
+              The articles you can browse here are the example domain. Rename the entity and they
+              become your products, posts or tickets.
             </p>
           </CardContent>
         </Card>
@@ -142,9 +142,9 @@ export default async function AboutPage() {
           <Card>
             <CardHeader>
               <Sparkles className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>AI-Ready</CardTitle>
+              <CardTitle>Working Example Domain</CardTitle>
               <CardDescription>
-                Built-in patterns and integrations for AI-powered features
+                A complete Article feature to rename into your own entity
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -314,7 +314,7 @@ export default async function AboutPage() {
           <CardHeader>
             <CardTitle className="text-2xl">Start Exploring Articles</CardTitle>
             <CardDescription className="text-base">
-              Discover curated articles, tutorials, and guides for AI-assisted development
+              See the example domain in action: listing, filtering, search, detail pages and voting
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -17,11 +17,11 @@ export default meta
 type Story = StoryObj<typeof Badge>
 
 export const Default: Story = {
-  args: { children: 'AI Prompts' },
+  args: { children: 'Guide' },
 }
 
 export const Secondary: Story = {
-  args: { variant: 'secondary', children: 'prompting' },
+  args: { variant: 'secondary', children: 'architecture' },
 }
 
 export const Destructive: Story = {
@@ -48,7 +48,7 @@ export const CategoryBadges: Story = {
     <div className="flex flex-wrap gap-2">
       <Badge>Architecture</Badge>
       <Badge>Design Patterns</Badge>
-      <Badge>AI Prompts</Badge>
+      <Badge>Guide</Badge>
       <Badge>Security</Badge>
       <Badge>Performance</Badge>
     </div>

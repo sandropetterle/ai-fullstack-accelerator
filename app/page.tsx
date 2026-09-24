@@ -37,7 +37,7 @@ export default async function HomePage() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'AI Fullstack Accelerator',
-    description: 'A fullstack accelerator for building AI-powered applications with modern web technologies.',
+    description: 'A full-stack starter template built with Next.js and ASP.NET Core. Clone it, rename the example entity, and ship.',
     url: 'https://your-domain.com',
     potentialAction: {
       '@type': 'SearchAction',

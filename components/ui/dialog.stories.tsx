@@ -35,7 +35,7 @@ export const Default: Story = {
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Label htmlFor="search-name">Name</Label>
-          <Input id="search-name" placeholder="e.g. AI Prompts about reasoning" />
+          <Input id="search-name" placeholder="e.g. Architecture guides" />
         </div>
         <DialogFooter>
           <Button variant="outline">Cancel</Button>
@@ -61,8 +61,8 @@ export const WithLongContent: Story = {
         </DialogHeader>
         <div className="space-y-2 text-sm text-muted-foreground">
           <p><strong>Author:</strong> Alice Chen</p>
-          <p><strong>Category:</strong> AI Prompts</p>
-          <p><strong>Tags:</strong> prompting, reasoning, llm</p>
+          <p><strong>Category:</strong> Guide</p>
+          <p><strong>Tags:</strong> architecture, ef-core, testing</p>
           <p><strong>Created:</strong> January 15, 2024</p>
           <p><strong>Votes:</strong> 142</p>
         </div>

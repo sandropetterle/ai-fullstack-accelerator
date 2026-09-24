@@ -28,7 +28,6 @@ const DEFAULT_METADATA: Metadata = {
     'user guide',
     'API docs',
     'contribution guide',
-    'AI',
     'how to use',
   ],
   openGraph: {

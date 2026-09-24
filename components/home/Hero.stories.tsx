@@ -24,7 +24,7 @@ export const WithCmsContent: Story = {
   args: {
     heading: 'AI Fullstack Accelerator',
     subheading:
-      'Curated articles, guides, and resources for full-stack AI development. Discover proven approaches and best practices.',
+      'Curated articles, guides, and resources for full-stack development. Discover proven approaches and best practices.',
     primaryCTA: MOCK_CTA_PRIMARY,
     secondaryCTA: MOCK_CTA_SECONDARY,
   },
@@ -32,8 +32,8 @@ export const WithCmsContent: Story = {
 
 export const CustomHeading: Story = {
   args: {
-    heading: 'Build Smarter AI Applications',
+    heading: 'Ship Your Next Product Faster',
     subheading:
-      'A curated collection of articles, guides, and best practices for modern AI-powered application development.',
+      'A curated collection of articles, guides, and best practices for modern full-stack development.',
   },
 }

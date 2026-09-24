@@ -18,7 +18,7 @@
     "tmp": "^0.2.6",
     "uuid": "^11.1.1"
   },
-  "description": "AI Fullstack Accelerator - A fullstack template for building AI-powered applications with Next.js, ASP.NET Core, and Strapi CMS",
+  "description": "Full-stack starter template: Next.js 16 frontend, ASP.NET Core 10 Clean Architecture API, Azure Bicep IaC and an optional Strapi 5 CMS. Ships configured for AI-assisted development.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -37,14 +37,16 @@
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN"
   },
   "keywords": [
-    "ai",
     "fullstack",
+    "template",
     "accelerator",
     "nextjs",
-    "aspnet"
+    "aspnet",
+    "clean-architecture",
+    "ai-assisted-development"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Sandro Petterle",
+  "license": "MIT",
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-checkbox": "^1.3.11",

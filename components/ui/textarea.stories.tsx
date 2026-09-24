@@ -41,7 +41,7 @@ export const Disabled: Story = {
 export const WithContent: Story = {
   args: {
     defaultValue:
-      'Guide LLMs to reason step-by-step before producing a final answer, significantly improving accuracy on complex reasoning tasks.',
+      'Keep data access behind domain-specific interfaces so services stay unit-testable without a database.',
     rows: 3,
     className: 'w-80',
   },
