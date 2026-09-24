@@ -12,7 +12,7 @@
 [![Strapi 5](https://img.shields.io/badge/Strapi-5-4945FF?logo=strapi&logoColor=white)](https://strapi.io)
 [![Azure](https://img.shields.io/badge/Azure-Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/products/container-apps)
 
-> **Production-ready full-stack blueprint** — Next.js 16 + ASP.NET Core 10 + optional Strapi 5 CMS + Azure IaC.
+> **Full-stack blueprint built to production standards** — Next.js 16 + ASP.NET Core 10 + optional Strapi 5 CMS + Azure IaC.
 > Clone, rename your entity, and ship.
 
 ## What the "AI" in the name means

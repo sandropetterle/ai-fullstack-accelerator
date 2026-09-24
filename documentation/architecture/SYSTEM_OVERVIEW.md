@@ -8,7 +8,7 @@
 
 ## 1. Vision
 
-The AI Fullstack Accelerator is a production-ready full-stack blueprint that developers can clone, rename their domain entity, and ship.
+The AI Fullstack Accelerator is a full-stack blueprint built to production standards that developers can clone, rename their domain entity, and ship.
 
 Each "Article" in the accelerator represents an example CRUD entity demonstrating every operation type — list, detail, create, update, delete, vote, search, and filter. Users rename it to their domain entity (Product, Order, Recipe, etc.) via `scripts/rename-entity.sh`.
 

@@ -26,12 +26,13 @@ The README called the accelerator production-ready and listed a "test → build 
 - **`container-images` job in `test.yml`** (matrix: `api`, `web`): `docker build` of `backend/Dockerfile` and the root `Dockerfile`, then `docker run` and poll `/health` (API) or `/` (web) for up to 60 s. No registry, no Azure, no secrets. `test-summary` fails if it fails.
 - **`lighthouserc.json`**: URLs `/` and `/articles`, 3 runs; hard gates on performance score ≥ 0.8, accessibility ≥ 0.9 and CLS ≤ 0.1; FCP/LCP/TTI as warnings because shared runners are too noisy for single-metric gates. No `startServerCommand`, because the workflow starts the server itself. The workflow path filter now names the `.json` file.
 - **Deploy stays opt-in.** The README says so, says how to turn it on, and says what is and isn't verified.
+- **"Production-ready" becomes "built to production standards"** in the README tagline, `SYSTEM_OVERVIEW.md` and the GitHub About text. That describes the practices the repo demonstrates, without implying a deployment history it doesn't have.
 
 ### Alternatives Evaluated
 
 | Alternative | Why Rejected |
 |------------|-------------|
-| Run the deploy once against a throwaway resource group to back the "production-ready" claim | Costs Azure money and needs OIDC, secrets and lock removal on teardown; a separate decision for the maintainer (not taken here) |
+| Run the deploy once against a throwaway resource group to back the "production-ready" claim | Cheap in Azure spend (estimated under $5 for a few hours), but needs an app registration, OIDC federation, secrets and lock removal on teardown. The maintainer chose to reword the claim instead: README tagline, SYSTEM_OVERVIEW and GitHub About now say "built to production standards" |
 | Leave Lighthouse/Chromatic listed as included | Misleading: they have never run |
 | Make Lighthouse run on PRs without Azure | SSR pages need a reachable API (`LHCI_API_BASE_URL`); without one the scores measure error states |
 

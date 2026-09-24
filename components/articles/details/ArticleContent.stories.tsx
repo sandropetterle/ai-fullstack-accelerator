@@ -9,7 +9,7 @@ This guide walks you through building a modern full-stack application using Next
 
 Use this guide when:
 
-- You need a **production-ready** starting point
+- You need a **tested** starting point
 - You want infrastructure as code from day one
 - You need full-stack TypeScript + .NET
 
@@ -38,7 +38,7 @@ Deploy to Azure Container Apps using the provided Bicep IaC.
 | Benefit | Cost |
 |---------|------|
 | Fast start | Learning curve |
-| Production-ready | Opinionated stack |
+| Tested defaults | Opinionated stack |
 | IaC included | Requires Azure |
 
 ## Further Reading
