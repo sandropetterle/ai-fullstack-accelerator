@@ -206,6 +206,6 @@ Each Container App uses system-assigned managed identity. `main.bicep` assigns t
 - [Container Apps Environment Bicep reference](https://learn.microsoft.com/azure/templates/microsoft.app/managedenvironments)
 - [Key Vault secret references in Container Apps](https://learn.microsoft.com/azure/container-apps/manage-secrets)
 - [`infrastructure/README.md`](../../infrastructure/README.md) — quick-start for engineers
-- [`deployment/github-secrets-setup.md`](../../deployment/github-secrets-setup.md) — OIDC setup for GitHub Actions
+- [`.github/REPO_VARIABLES.md`](../../.github/REPO_VARIABLES.md) — GitHub secrets/variables for the deploy workflows; OIDC federation is set up by `deployment/setup-github-oidc.ps1`
 - [AUTH_SETUP_GUIDE.md](AUTH_SETUP_GUIDE.md) — OIDC provider configuration
 - [MONITORING_GUIDE.md](MONITORING_GUIDE.md) — alert thresholds and dashboards

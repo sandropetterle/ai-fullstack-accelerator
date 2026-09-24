@@ -20,7 +20,9 @@ Every documentation file must live in the correct folder based on its content ty
 | `documentation/cms-components/` | CMS component reference — Strapi component schemas, field tables, dependency map | Frontend devs, Content editors | Updated when CMS component schemas change |
 | `documentation/diagrams/` | Architecture and flow diagrams — permanent | All audiences | Created when diagram tooling is adopted |
 | `.storybook/` | Storybook configuration and shared fixtures — interactive UI component catalog | Frontend devs | Updated when components are added or config changes |
-| `deployment/` | Azure deployment scripts and step-by-step guides | Infrastructure Engineers, DevOps | Updated on infrastructure changes |
+| `docs/` | Accelerator guides — task-oriented how-tos for adopting the template (getting started, architecture decisions, swapping technologies, updates, CMS removal) | Developers adopting the template | Updated when the adoption workflow changes |
+| `deployment/` | Azure deployment scripts (GitHub OIDC setup, registry access, cleanup) | Infrastructure Engineers, DevOps | Updated on infrastructure changes |
+| `infrastructure/` | Bicep IaC and its [README](../infrastructure/README.md) | Infrastructure Engineers, DevOps | Updated on infrastructure changes |
 | `CLAUDE.md` (root) | AI assistant operational context — quick-reference | AI assistant, Developers | Updated when conventions or structure changes |
 | `README.md` (root) | Public-facing project entry point | New contributors, GitHub visitors | Updated each major phase |
 | `DOCUMENTATION_INDEX.md` (root) | Central map of all documentation files | All audiences | Updated whenever a doc is created, moved, or deleted |
@@ -137,7 +139,7 @@ All diagrams are embedded inline in their target architecture docs. When adding 
 `README.md` → `CLAUDE.md` → `documentation/architecture/SYSTEM_OVERVIEW.md` → `documentation/architecture/FRONTEND_ARCHITECTURE.md` → `documentation/architecture/CMS_ARCHITECTURE.md` → `documentation/testing/TESTING_STRATEGY.md`
 
 ### Infrastructure Engineer
-`README.md` → `deployment/README.md` → `documentation/operations/INFRASTRUCTURE_MANAGEMENT.md` → `documentation/operations/MONITORING_GUIDE.md` → `documentation/operations/RUNBOOK.md` → `deployment/github-secrets-setup.md`
+`README.md` → `infrastructure/README.md` → `documentation/operations/INFRASTRUCTURE_MANAGEMENT.md` → `documentation/operations/MONITORING_GUIDE.md` → `documentation/operations/RUNBOOK.md` → `.github/REPO_VARIABLES.md`
 
 ### SRE / On-Call Engineer
 `documentation/operations/RUNBOOK.md` → `documentation/operations/MONITORING_GUIDE.md` → `documentation/operations/DISASTER_RECOVERY.md` → `documentation/operations/INCIDENT_RESPONSE.md`
@@ -158,6 +160,7 @@ All diagrams are embedded inline in their target architecture docs. When adding 
 | A new architectural pattern or component | `documentation/architecture/` |
 | A technical decision with trade-offs | `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` |
 | How to run or troubleshoot in production | `documentation/operations/RUNBOOK.md` |
-| A deployment procedure for Azure | `deployment/` |
+| A deployment procedure for Azure | `infrastructure/README.md` (scripts go in `deployment/`) |
+| A how-to for someone adopting the template | `docs/` |
 | A diagram or visual | `documentation/diagrams/` |
 | Storybook stories for a UI component | Colocated with the component (`*.stories.tsx` next to component file) |

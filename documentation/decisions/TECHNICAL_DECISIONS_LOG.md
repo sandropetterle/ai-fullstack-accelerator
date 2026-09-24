@@ -4,9 +4,86 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **17 active decisions | 0 archived**
+> **19 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 19: `/health` is liveness only; `/health/ready` checks dependencies
+
+**Date:** 2026-09-24
+**Title:** Stop running the database check on the liveness endpoint
+**Category:** Infrastructure / Reliability
+**Status:** Active
+
+### Context / Problem
+
+Found by the new `container-images` CI job (Decision 18): the production API image started and listened on 8080, but `/health` returned 503 because the database it was pointed at had no schema. `HEALTH_API.md` and the Bicep both treat `/health` as liveness and `/health/ready` as readiness. `Program.cs` mapped both to the same checks, including `AddDbContextCheck`. The Container Apps startup and liveness probes use `/health`, so in production a database outage would fail liveness and make the platform restart every API replica in a loop, even though restarting cannot fix the database. It would also have failed the startup probe on a fresh deploy until migrations were applied.
+
+### Decision
+
+- `/health` runs no checks (`Predicate = _ => false`): 200 `Healthy` whenever the process is serving requests.
+- `/health/ready` runs every registered check (the `DbContext` check today): 503 `Unhealthy` when a dependency is down, which takes the replica out of traffic without restarting it.
+- `HealthEndpointTests` registers a failing check and asserts `/health` → 200, `/health/ready` → 503 (red before the fix, green after).
+- `HEALTH_API.md` corrected: `/health/ready` returns plain text, not the JSON shape it documented.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Point the liveness probe at a new endpoint and leave `/health` as is | `/health` is already documented as liveness and used by the deploy workflow's health check; changing the probe hides the mismatch instead of fixing it |
+| Keep the DB check on liveness, raise the probe's failure threshold | Delays the restart loop instead of preventing it |
+
+### Consequences
+
+- A database outage now shows up as replicas going not-ready (no traffic), not as crash-looping containers.
+- The deploy workflows' post-deploy health check (`/health` must return `Healthy`) now confirms the app is up, not that the database is reachable; `/health/ready` is the dependency check.
+
+### Files Changed
+
+- `backend/src/Accelerator.Api/Program.cs`
+- `backend/tests/Accelerator.Api.Tests/IntegrationTests/HealthEndpointTests.cs` (new)
+- `documentation/api/HEALTH_API.md`
+
+---
+
+## Decision 18: Verify deployable artifacts on every PR; commit the Lighthouse CI config
+
+**Date:** 2026-09-24
+**Title:** New `container-images` CI job builds and starts both production images; `lighthouserc.json` committed; deploy stays opt-in
+**Category:** Infrastructure / CI
+**Status:** Active
+
+### Context / Problem
+
+The README called the accelerator production-ready and listed a "test → build → deploy gate", Lighthouse CI and Chromatic. In practice every job that builds images, deploys, or runs Lighthouse/Chromatic is gated by `AZURE_DEPLOY_ENABLED` (Decision 10), which has never been set, so across all runs of the deploy workflows those jobs were skipped. Nothing else built the production Dockerfiles. `lhci autorun` had no config file (the guide named `lighthouserc.json`, the workflow's path filter named `lighthouserc.yml`, neither existed).
+
+### Decision
+
+- **`container-images` job in `test.yml`** (matrix: `api`, `web`): `docker build` of `backend/Dockerfile` and the root `Dockerfile`, then `docker run` and poll `/health` (API) or `/` (web) for up to 60 s. No registry, no Azure, no secrets. `test-summary` fails if it fails.
+- **`lighthouserc.json`**: URLs `/` and `/articles`, 3 runs; hard gates on performance score ≥ 0.8, accessibility ≥ 0.9 and CLS ≤ 0.1; FCP/LCP/TTI as warnings because shared runners are too noisy for single-metric gates. No `startServerCommand`, because the workflow starts the server itself. The workflow path filter now names the `.json` file.
+- **Deploy stays opt-in.** The README says so, says how to turn it on, and says what is and isn't verified.
+- **"Production-ready" becomes "built to production standards"** in the README tagline, `SYSTEM_OVERVIEW.md` and the GitHub About text. That describes the practices the repo demonstrates, without implying a deployment history it doesn't have.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Run the deploy once against a throwaway resource group to back the "production-ready" claim | Cheap in Azure spend (estimated under $5 for a few hours), but needs an app registration, OIDC federation, secrets and lock removal on teardown. The maintainer chose to reword the claim instead: README tagline, SYSTEM_OVERVIEW and GitHub About now say "built to production standards" |
+| Leave Lighthouse/Chromatic listed as included | Misleading: they have never run |
+| Make Lighthouse run on PRs without Azure | SSR pages need a reachable API (`LHCI_API_BASE_URL`); without one the scores measure error states |
+
+### Consequences
+
+- A broken Dockerfile or an image that fails to boot now fails the PR, not a future deploy.
+- The deploy workflows themselves remain unexercised until `AZURE_DEPLOY_ENABLED` is set.
+
+### Files Changed
+
+- `.github/workflows/test.yml`, `.github/workflows/frontend-container-deploy.yml`
+- `lighthouserc.json` (new), `documentation/testing/PERFORMANCE_BASELINE_GUIDE.md`
+- `README.md`, `infrastructure/README.md` (new)
 
 ---
 

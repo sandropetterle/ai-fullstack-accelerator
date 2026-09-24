@@ -1,6 +1,6 @@
 # Documentation Index — AI Fullstack Accelerator
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-09-24
 **Audience:** All contributors
 **Purpose:** Central map of every documentation file in the accelerator. Use this as your starting point when you need to find or update documentation.
 
@@ -15,6 +15,20 @@
 | [README.md](README.md) | Project overview, quick-start setup, tech stack summary |
 | [CLAUDE.md](CLAUDE.md) | AI assistant context — commands, architecture quick-ref, mandatory rules |
 | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) | This file — map of all documentation |
+
+---
+
+## Accelerator Guides (`docs/`)
+
+Task-oriented guides for someone adopting the template. `documentation/` below is the reference for the system itself.
+
+| File | Purpose |
+|------|---------|
+| [GETTING_STARTED.md](docs/GETTING_STARTED.md) | Full setup walkthrough from a fresh clone, plus a tour of the codebase |
+| [ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md) | The 16 key "why" decisions, each with its trade-off |
+| [TECHNOLOGY_SWAP_GUIDE.md](docs/TECHNOLOGY_SWAP_GUIDE.md) | Replacing a component (database, auth provider, cloud, CMS, telemetry) |
+| [UPDATE_GUIDE.md](docs/UPDATE_GUIDE.md) | Dependency updates, major-version upgrades, AI-assisted update prompts |
+| [CMS_REMOVAL_GUIDE.md](docs/CMS_REMOVAL_GUIDE.md) | Stripping the optional Strapi integration |
 
 ---
 
@@ -102,7 +116,17 @@
 
 | File | Purpose |
 |------|---------|
-| `deployment/README.md` | Quick-start deployment guide |
-| `deployment/github-secrets-setup.md` | GitHub Actions OIDC federated identity setup |
-| `deployment/CONTAINER_APPS_GUIDE.md` | Azure Container Apps deployment walkthrough |
-| `infrastructure/README.md` | Bicep IaC quick-start for engineers |
+| [infrastructure/README.md](infrastructure/README.md) | What the Bicep provisions, deploying and tearing it down, turning on the opt-in deploy workflows |
+| [.github/REPO_VARIABLES.md](.github/REPO_VARIABLES.md) | GitHub secrets and variables for the deploy workflows, including the `AZURE_DEPLOY_ENABLED` gate |
+| `deployment/*.ps1` | Scripts: GitHub OIDC federation (`setup-github-oidc.ps1`), registry pull access (`configure-acr-access.ps1`), resource cleanup (`azure-cleanup.ps1`) |
+
+---
+
+## Repository
+
+| File | Purpose |
+|------|---------|
+| [CONTRIBUTING.md](.github/CONTRIBUTING.md) | Local setup, commit conventions, PR checklist |
+| [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) | PR checklist (tests, coverage, docs, decision log) |
+| [SECURITY.md](.github/SECURITY.md) | How to report a vulnerability |
+| [CODE_OF_CONDUCT.md](.github/CODE_OF_CONDUCT.md) | Contributor Covenant |

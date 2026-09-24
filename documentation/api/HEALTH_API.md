@@ -1,6 +1,6 @@
 # Health API Reference
 
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-09-24
 **Audience:** DevOps, Infrastructure engineers
 **Purpose:** Reference for the `/health` endpoints used for liveness and readiness probes.
 
@@ -36,54 +36,40 @@ Healthy
 
 ## GET /health/ready
 
-Readiness check. Includes an EF Core `DbContext` check — confirms the database connection is healthy before marking the container as ready to serve traffic.
+Readiness check. Runs every registered health check, including the EF Core `DbContext` check (named `ApplicationDbContext`), and confirms the database connection is healthy before the container receives traffic. The response body is the aggregate status as plain text; per-check details go to the application log.
 
 ### Example Response (healthy)
 
-```json
+```
 200 OK
-Content-Type: application/json
+Content-Type: text/plain
 
-{
-  "status": "Healthy",
-  "results": {
-    "accelerator-api-db": {
-      "status": "Healthy",
-      "description": null,
-      "data": {}
-    }
-  }
-}
+Healthy
 ```
 
 ### Example Response (unhealthy)
 
-```json
+```
 503 Service Unavailable
-Content-Type: application/json
+Content-Type: text/plain
 
-{
-  "status": "Unhealthy",
-  "results": {
-    "accelerator-api-db": {
-      "status": "Unhealthy",
-      "description": "An exception was thrown while checking health.",
-      "data": {}
-    }
-  }
-}
+Unhealthy
 ```
 
 ### Health Check Configuration
 
-Defined in `Program.cs`:
+Registered in `AddInfrastructure()` (`InfrastructureServiceCollectionExtensions.cs`) and mapped in `Program.cs`:
 
 ```csharp
-builder.Services.AddHealthChecks()
+services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();
 
-app.MapHealthChecks("/health");
+// Liveness: no checks, so a database outage doesn't restart healthy replicas
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+// Readiness: all registered checks
 app.MapHealthChecks("/health/ready");
 ```
+
+The Container Apps startup and liveness probes use `/health`; the readiness probe uses `/health/ready` (`infrastructure/modules/containerApps.bicep`). Both behaviours are covered by `HealthEndpointTests`.
 
 See [MONITORING_GUIDE.md](../operations/MONITORING_GUIDE.md) for alert thresholds and dashboard configuration.

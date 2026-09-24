@@ -384,4 +384,4 @@ Authentication__Audience=               # API app client ID
 Authentication__RequireHttpsMetadata=true
 ```
 
-See [../../deployment/github-secrets-setup.md](../../deployment/github-secrets-setup.md) for production secrets configuration.
+See [.github/REPO_VARIABLES.md](../../.github/REPO_VARIABLES.md) for the GitHub secrets and variables, and [infrastructure/README.md](../../infrastructure/README.md) for how production secrets reach the apps through Key Vault.

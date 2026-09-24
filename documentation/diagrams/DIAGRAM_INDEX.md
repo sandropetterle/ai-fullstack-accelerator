@@ -39,7 +39,7 @@ When adding a diagram placeholder in a document, use:
 
 | Diagram | Target Document | Format |
 |---------|----------------|--------|
-| Azure Infrastructure | [deployment/CONTAINER_APPS_GUIDE.md](../../deployment/CONTAINER_APPS_GUIDE.md) | Mermaid flowchart TD |
+| Azure Infrastructure (system components) | [documentation/architecture/SYSTEM_OVERVIEW.md §3](../architecture/SYSTEM_OVERVIEW.md#3-architecture-components) | Mermaid flowchart TD |
 
 ### Sequence Diagrams
 

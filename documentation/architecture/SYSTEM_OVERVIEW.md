@@ -8,7 +8,7 @@
 
 ## 1. Vision
 
-The AI Fullstack Accelerator is a production-ready full-stack blueprint that developers can clone, rename their domain entity, and ship.
+The AI Fullstack Accelerator is a full-stack blueprint built to production standards that developers can clone, rename their domain entity, and ship.
 
 Each "Article" in the accelerator represents an example CRUD entity demonstrating every operation type — list, detail, create, update, delete, vote, search, and filter. Users rename it to their domain entity (Product, Order, Recipe, etc.) via `scripts/rename-entity.sh`.
 
@@ -209,4 +209,4 @@ The most significant architectural choices are recorded in `documentation/decisi
 | Entity model, seeding, enum mapping | [DATA_MODEL.md](DATA_MODEL.md) |
 | Auth, CORS, CSP, rate limiting, security headers | [SECURITY_OVERVIEW.md](SECURITY_OVERVIEW.md) |
 | Bicep IaC, resource inventory, deploy workflow | [../operations/INFRASTRUCTURE_MANAGEMENT.md](../operations/INFRASTRUCTURE_MANAGEMENT.md) |
-| Azure deployment guide | [../../deployment/README.md](../../deployment/README.md) |
+| Azure deployment guide | [../../infrastructure/README.md](../../infrastructure/README.md) |

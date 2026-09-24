@@ -180,7 +180,7 @@ export default async function AboutPage() {
               <Lightbulb className="h-8 w-8 text-primary mb-2" />
               <CardTitle>Real-World Examples</CardTitle>
               <CardDescription>
-                Production-ready code samples and implementation examples
+                Tested code samples and implementation examples
               </CardDescription>
             </CardHeader>
             <CardContent>
