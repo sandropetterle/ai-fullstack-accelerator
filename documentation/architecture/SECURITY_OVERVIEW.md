@@ -164,9 +164,9 @@ All GET article endpoints and the vote endpoint are public (no authentication re
 - `ProblemDetails` format with generic error messages
 
 ### Rate Limiting
-- Fixed window rate limiter on vote/action endpoint: 10 requests/minute per IP
-- API endpoints: 50 requests/minute per IP
-- General: 100 requests/minute per IP
+- Vote endpoint: fixed window, 10 requests/minute per client IP, rejected immediately beyond that
+- All other API controller endpoints: sliding window, 50 requests/minute per client IP
+- Client IP is read from `X-Forwarded-For` (last hop only, i.e. the address the ingress appended). This trusts whatever proxy sits in front of the API, which is correct behind Container Apps ingress but would let clients spoof their partition if the API were exposed directly.
 
 ---
 

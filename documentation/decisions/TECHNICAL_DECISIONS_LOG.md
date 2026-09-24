@@ -4,9 +4,54 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **19 active decisions | 0 archived**
+> **20 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 20: Rate limits per client IP; the vote policy actually applies
+
+**Date:** 2026-09-24
+**Title:** Partition rate-limit policies by client IP (from `X-Forwarded-For`); move the `api` policy from a `MapControllers` convention to controller attributes; drop the unused `fixed` policy
+**Category:** Security
+**Status:** Active
+
+### Context / Problem
+
+Nine places in the docs said the limits were "per IP". The code did something else:
+
+1. **One bucket per policy.** `AddFixedWindowLimiter` / `AddSlidingWindowLimiter` create a single partition, so every client shared one budget. One client could use up the vote budget for everyone.
+2. **The vote policy never applied.** `app.MapControllers().RequireRateLimiting("api")` adds its metadata after the action's `[EnableRateLimiting("action")]`, and the last rate-limiting metadata wins. So `POST /articles/{id}/vote` ran under the 50/min `api` policy, not the documented 10/min `action` policy. Found by the new `RateLimitingTests`: the 11th vote returned 404, not 429.
+3. **Dead config.** The `fixed` policy (100/min) was registered but not attached to any endpoint.
+
+### Decision
+
+- Both policies are now `AddPolicy(...)` with `RateLimitPartition` keyed by `HttpContext.Connection.RemoteIpAddress`.
+- `UseForwardedHeaders` (first in the pipeline) with `XForwardedFor`, default `ForwardLimit = 1`, and known proxies/networks cleared. It reads the last hop, which is the address the Container Apps ingress appended, so a client-supplied `X-Forwarded-For` can't choose the partition.
+- The `api` policy moved to `[EnableRateLimiting("api")]` on `ArticlesController` and `AuthController`, so the vote action's own attribute overrides it. `MapControllers()` no longer adds a convention.
+- `action` no longer queues (`QueueLimit = 0`): a vote over the limit gets an immediate 429 instead of waiting up to a minute. The frontend already maps 429 to a "try again" message (`lib/api/error.ts`).
+- `fixed` removed.
+- `RateLimitingTests`: 10 votes from one simulated IP pass and the 11th gets 429; a second IP is unaffected.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Change the docs to say "shared by all clients" | Leaves a trivial way for one client to block voting for everyone |
+| Pin `KnownProxies` to the ingress | Container Apps ingress addresses aren't fixed or published per environment; the documented trade-off (API only reachable through the ingress) holds for this deployment |
+| Partition by authenticated user | Most endpoints, including voting, are anonymous |
+
+### Consequences
+
+- Server-side rendering calls from the web app share the web app's outbound-IP partition (see ADR §8 trade-off).
+- If the API is ever exposed without a proxy that sets `X-Forwarded-For`, clients could spoof their partition; pin known proxies in that case.
+
+### Files Changed
+
+- `backend/src/Accelerator.Infrastructure/InfrastructureServiceCollectionExtensions.cs`, `backend/src/Accelerator.Api/Program.cs`, `Controllers/ArticlesController.cs`, `Controllers/AuthController.cs`
+- `backend/tests/Accelerator.Api.Tests/IntegrationTests/RateLimitingTests.cs` (new)
+- `docs/ARCHITECTURE_DECISIONS.md` §8, `documentation/api/API_REFERENCE_INDEX.md`, `documentation/architecture/BACKEND_ARCHITECTURE.md`, `documentation/architecture/SECURITY_OVERVIEW.md`
 
 ---
 

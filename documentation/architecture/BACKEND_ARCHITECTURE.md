@@ -110,12 +110,13 @@ flowchart TD
 - Events: `ArticleViewed` (slug, category), `ArticleVoted` (articleId), `ArticleSearched` (search, category, tagCount), `ArticleCreated` (slug, category), `ArticleUpdated` (slug, category)
 - Metrics: `FeaturedArticlesCacheHit`, `TrendingArticlesCacheHit` (1 = hit, 0 = miss)
 
-### Rate Limiting (Fixed Window)
-| Policy | Limit | Window |
-|--------|-------|--------|
-| `fixed` | 100 req/min | Per IP |
-| `api` | 50 req/min | Per IP |
-| `action` | 10 req/min | Per IP |
+### Rate Limiting
+| Policy | Limit | Window | Partition | Applied to |
+|--------|-------|--------|-----------|------------|
+| `api` | 50 req/min, up to 5 queued | Sliding (4 × 15 s) | Per client IP | `[EnableRateLimiting("api")]` on each controller |
+| `action` | 10 req/min, no queue | Fixed (1 min) | Per client IP | Vote endpoint (overrides `api`) |
+
+Client IP comes from `X-Forwarded-For` via `UseForwardedHeaders` (last hop only). Counts are per replica. See [ADR §8](../../docs/ARCHITECTURE_DECISIONS.md#8-rate-limiting-in-the-api-layer).
 
 ### TimeProvider
 - `TimeProvider.System` injected via DI for testable time operations

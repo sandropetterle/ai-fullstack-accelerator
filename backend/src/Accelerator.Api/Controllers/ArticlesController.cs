@@ -13,6 +13,7 @@ namespace Accelerator.Api.Controllers;
 [Route("api/v{version:apiVersion}/articles")]
 [Route("api/articles")]
 [Asp.Versioning.ApiVersion(1.0)]
+[EnableRateLimiting("api")]
 public class ArticlesController : ControllerBase
 {
     private readonly IArticleService _articleService;

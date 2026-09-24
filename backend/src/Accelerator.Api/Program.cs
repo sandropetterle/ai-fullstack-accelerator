@@ -162,6 +162,9 @@ else
 
 var app = builder.Build();
 
+// Client IP from X-Forwarded-For (options in AddInfrastructure); must run before rate limiting
+app.UseForwardedHeaders();
+
 // Exception handling middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -220,7 +223,10 @@ app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers().RequireRateLimiting("api");
+// Rate-limit policies are attributes on the controllers ([EnableRateLimiting("api")] on the class,
+// "action" on the vote endpoint). A RequireRateLimiting(...) convention here would be applied last
+// and override the per-action policy.
+app.MapControllers();
 
 app.Run();
 
