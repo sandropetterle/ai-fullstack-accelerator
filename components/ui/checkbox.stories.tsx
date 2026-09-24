@@ -43,7 +43,7 @@ export const WithLabel: Story = {
 export const TagFilter: Story = {
   render: () => (
     <div className="flex flex-col gap-3">
-      {['prompting', 'reasoning', 'llm', 'architecture', 'security'].map((tag) => (
+      {['architecture', 'ef-core', 'testing', 'performance', 'security'].map((tag) => (
         <div key={tag} className="flex items-center gap-2">
           <Checkbox id={`tag-${tag}`} />
           <Label htmlFor={`tag-${tag}`}>{tag}</Label>

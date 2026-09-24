@@ -3,14 +3,14 @@ import { ArticleContent } from './ArticleContent'
 
 const SAMPLE_MARKDOWN = `## Overview
 
-This guide walks you through building a modern AI-powered full-stack application using Next.js and ASP.NET Core.
+This guide walks you through building a modern full-stack application using Next.js and ASP.NET Core.
 
 ## Prerequisites
 
 Use this guide when:
 
 - You need a **production-ready** starting point
-- You want to integrate AI capabilities
+- You want infrastructure as code from day one
 - You need full-stack TypeScript + .NET
 
 ## Example
@@ -39,7 +39,7 @@ Deploy to Azure Container Apps using the provided Bicep IaC.
 |---------|------|
 | Fast start | Learning curve |
 | Production-ready | Opinionated stack |
-| AI-integrated | Requires Azure |
+| IaC included | Requires Azure |
 
 ## Further Reading
 

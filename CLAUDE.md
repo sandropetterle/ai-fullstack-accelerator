@@ -76,8 +76,8 @@ auth.ts                        # Auth.js configuration
 ```
 
 ### Category Enum Mapping
-Backend uses PascalCase enums, frontend expects spaced strings.
-**Always use `lib/api/mappers.ts`:** `mapBackendCategory()` / `mapFrontendCategory()`
+Category values cross the API boundary only through `lib/api/mappers.ts`. The current values map 1:1; keep the single mapping point so a display name that differs from its enum identifier touches one file.
+**Always use `lib/api/mappers.ts`:** `mapCategoryFromApi()` / `mapCategoryToApi()`
 
 ### API Endpoints
 
@@ -95,7 +95,7 @@ Base: `http://localhost:5255/api`
 | PUT | `/articles/{id}` | RequireEditor |
 | DELETE | `/articles/{id}` | RequireAdmin |
 | GET | `/auth/me` | Authorize |
-| GET | `/health`, `/health/ready` | None |
+| GET | `/health`, `/health/ready` (root, not under `/api`) | None |
 
 ## Coverage Verification Rule (MANDATORY)
 
@@ -115,7 +115,6 @@ Update `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` whenever you make an
 | Architecture | `documentation/architecture/` |
 | REST API reference | `documentation/api/` |
 | CMS schemas | `documentation/cms-components/` |
-| Requirements | `documentation/requirements/` |
 | Decisions | `documentation/decisions/` |
 | Testing | `documentation/testing/` |
 | Operations | `documentation/operations/` |

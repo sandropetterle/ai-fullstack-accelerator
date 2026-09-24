@@ -178,9 +178,9 @@ Server components fetch data directly. Use `lib/api/` functions for backend call
 
 ### Category enum mapping
 
-The backend uses PascalCase enums; the frontend displays spaced strings. Always go through `lib/api/mappers.ts`:
-- `mapBackendCategory()` — backend → frontend display string
-- `mapFrontendCategory()` — frontend string → backend enum value
+Category values cross the API boundary only through `lib/api/mappers.ts` (the current values map 1:1, but a display name that differs from its enum identifier should only ever touch this file):
+- `mapCategoryFromApi()` — backend enum value → frontend display string
+- `mapCategoryToApi()` — frontend display string → backend enum value
 
 Do not bypass these functions.
 

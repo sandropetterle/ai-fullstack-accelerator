@@ -38,7 +38,6 @@ export const metadata: Metadata = {
     'tutorials',
     'guides',
     'reference',
-    'AI',
     'fullstack',
     'software development',
     'architecture',

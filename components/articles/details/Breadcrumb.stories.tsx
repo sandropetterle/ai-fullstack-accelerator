@@ -15,7 +15,7 @@ export const ArticleDetail: Story = {
     items: [
       { label: 'Home', href: '/' },
       { label: 'Articles', href: '/articles' },
-      { label: 'Getting Started with AI Fullstack Development', href: '/articles/getting-started-ai-fullstack' },
+      { label: 'Getting Started with the AI Fullstack Accelerator', href: '/articles/getting-started-ai-fullstack' },
     ],
   },
 }

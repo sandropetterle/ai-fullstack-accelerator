@@ -53,19 +53,19 @@ export const PatternCardShape: Story = {
     <Card className="w-80 h-full">
       <CardHeader>
         <div className="mb-2">
-          <Badge>AI Prompts</Badge>
+          <Badge>Guide</Badge>
         </div>
-        <CardTitle className="text-xl">Chain of Thought Prompting</CardTitle>
+        <CardTitle className="text-xl">Repository Pattern with EF Core</CardTitle>
         <CardDescription className="line-clamp-3">
-          Guide LLMs to reason step-by-step before producing a final answer,
-          significantly improving accuracy on complex reasoning tasks.
+          Keep data access behind domain-specific interfaces so services stay
+          unit-testable without a database.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="text-xs">prompting</Badge>
-          <Badge variant="secondary" className="text-xs">reasoning</Badge>
-          <Badge variant="secondary" className="text-xs">llm</Badge>
+          <Badge variant="secondary" className="text-xs">architecture</Badge>
+          <Badge variant="secondary" className="text-xs">ef-core</Badge>
+          <Badge variant="secondary" className="text-xs">testing</Badge>
         </div>
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground">

@@ -12,7 +12,7 @@ type HeroProps = {
 
 export function Hero({
   heading = 'AI Fullstack Accelerator',
-  subheading = 'Curated articles, guides, and resources for full-stack AI development. Discover proven approaches, best practices, and innovative solutions to accelerate your development.',
+  subheading = 'Curated articles, guides, and resources for full-stack development. Discover proven approaches and best practices to accelerate your work.',
   primaryCTA = { label: 'Browse Articles', href: '/articles', variant: 'primary' },
   secondaryCTA = { label: 'Learn More', href: '#featured', variant: 'outline' },
 }: HeroProps) {

@@ -73,7 +73,7 @@ lib/
 │   ├── client.ts                 ← Base HTTP client (get, post, put, delete + error handling)
 │   ├── error.ts                  ← handleApiError() — includes 429 rate-limit handling
 │   ├── articles.ts               ← Article API calls (getArticles, getArticleBySlug, etc.)
-│   ├── mappers.ts                ← mapBackendCategory / mapFrontendCategory (CRITICAL)
+│   ├── mappers.ts                ← mapCategoryFromApi / mapCategoryToApi (CRITICAL)
 │   └── types.ts                  ← API response types
 ├── cms/
 │   ├── client.ts                 ← fetchStrapi() with CmsUnavailableError handling
@@ -268,8 +268,8 @@ Backend uses PascalCase enum values; frontend displays spaced strings.
 | `News` | `"News"` |
 
 **Always use `lib/api/mappers.ts`:**
-- `mapBackendCategory(backendValue)` → display string
-- `mapFrontendCategory(displayString)` → backend enum value
+- `mapCategoryFromApi(apiCategory)` → display string
+- `mapCategoryToApi(uiCategory)` → backend enum value
 
 Never hardcode category strings; always go through the mapper.
 

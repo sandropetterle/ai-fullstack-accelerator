@@ -164,8 +164,32 @@ Data/           (Repositories, DbContext, Migrations)
 
 ## 15. Category Enum Mapping at the API Boundary
 
-**Decision:** Backend enums use PascalCase (`TechnologyAndAI`). Frontend displays spaced strings (`Technology & AI`). All mapping happens in `lib/api/mappers.ts` via `mapBackendCategory()` and `mapFrontendCategory()`.
+**Decision:** Category values cross the API boundary only through `lib/api/mappers.ts`: `mapCategoryFromApi()` (backend enum → display string) and `mapCategoryToApi()` (display string → backend enum). Unknown values from the API fall back to `General` with a console warning.
 
-**Why:** Keeping the mapping in one file means it is easy to find, easy to extend, and impossible to forget. If the mapping were spread across components, a new category value would require hunting through multiple files. Centralizing it also makes the mapping testable in isolation.
+**Why:** Backend enum identifiers (PascalCase, no spaces or symbols) and UI display strings are different vocabularies that only happen to coincide for the current values (`General`, `Tutorial`, `Guide`, `Reference`, `News`). The first category whose display name can't be a C# identifier (`Q&A`, `How-to`) would otherwise need string conversions scattered across components. With one mapping point it is a one-line change in one file, and the mapping is unit-tested in isolation.
+
+**Trade-off:** For today's values the mapping is an identity table, so it is indirection with no immediate payoff. It is kept because removing it later is trivial, while re-introducing it after components have started comparing raw API strings is not.
 
 **Rule:** Never convert category values inline in components. Always go through `lib/api/mappers.ts`.
+
+---
+
+## 16. Configured for AI-Assisted Development
+
+**Decision:** The template ships with what an AI coding assistant needs to work in it: a root `CLAUDE.md` (commands, architecture quick-reference, mandatory rules), a documentation governance model (`documentation/GOVERNANCE.md`), and ready-to-use prompts for recurring maintenance (`docs/UPDATE_GUIDE.md`). This is about how code gets written in projects built from the template. The application itself has no AI features.
+
+**Why:** Projects started from this template are expected to be developed with an assistant in the loop. An assistant starts every session knowing nothing about the repository. Without written context it guesses at commands, puts files in the wrong place and skips steps a team member would know about. So the scaffolding has to carry the project's rules as well as its code, in a form the assistant reads every time.
+
+The rules that matter most are backed by CI rather than prose:
+
+- the 70% coverage threshold lives in `jest.config.mjs` and fails `npm run test:ci`
+- the Clean Architecture dependency rule (§1) is a unit test
+- EF Core model drift fails the migrations job
+
+An assistant can ignore a sentence in `CLAUDE.md`, but it cannot get a red build merged, and lowering a threshold shows up in the diff a reviewer reads.
+
+**Trade-off:**
+- *Tool coupling.* `CLAUDE.md` is the file Claude Code loads automatically. Other assistants look for their own file names (`AGENTS.md`, `.github/copilot-instructions.md`), so a team on another tool has to link or copy it. The content is plain Markdown and tool-neutral; only the file name is not.
+- *Harness files go stale.* `CLAUDE.md` restates facts that also live in the code, and nothing checks that they agree. A September 2026 review found it naming mapper functions that had been renamed and a documentation folder that was never created. Keep it short, and prefer rules CI can check over descriptions it cannot.
+- *Guardrails apply to humans too.* A quick hand-written spike that drops coverage below 70% fails CI exactly as an assistant's would. That is the point, since a gate anyone can route around protects nothing, but it is real friction.
+- *Some rules are still conventions.* Recording decisions in the log and filing documents in the right folder are asked for in `CLAUDE.md` and the PR template, but not checked.

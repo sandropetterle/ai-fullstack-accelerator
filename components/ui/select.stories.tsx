@@ -25,7 +25,7 @@ export const Default: Story = {
       <SelectContent>
         <SelectItem value="architecture">Architecture</SelectItem>
         <SelectItem value="design-patterns">Design Patterns</SelectItem>
-        <SelectItem value="ai-prompts">AI Prompts</SelectItem>
+        <SelectItem value="testing">Testing</SelectItem>
         <SelectItem value="security">Security</SelectItem>
         <SelectItem value="performance">Performance</SelectItem>
       </SelectContent>
@@ -44,7 +44,7 @@ export const WithLabel: Story = {
         <SelectContent>
           <SelectItem value="architecture">Architecture</SelectItem>
           <SelectItem value="design-patterns">Design Patterns</SelectItem>
-          <SelectItem value="ai-prompts">AI Prompts</SelectItem>
+          <SelectItem value="testing">Testing</SelectItem>
           <SelectItem value="security">Security</SelectItem>
           <SelectItem value="performance">Performance</SelectItem>
         </SelectContent>
@@ -62,7 +62,7 @@ export const WithDefaultValue: Story = {
       <SelectContent>
         <SelectItem value="architecture">Architecture</SelectItem>
         <SelectItem value="design-patterns">Design Patterns</SelectItem>
-        <SelectItem value="ai-prompts">AI Prompts</SelectItem>
+        <SelectItem value="testing">Testing</SelectItem>
       </SelectContent>
     </Select>
   ),

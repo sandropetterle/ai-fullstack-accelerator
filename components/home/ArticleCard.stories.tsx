@@ -47,7 +47,7 @@ export const ManyTags: Story = {
   args: {
     article: {
       ...MOCK_ARTICLE,
-      tags: ['nextjs', 'react', 'typescript', 'ai', 'fullstack', 'aspnet'],
+      tags: ['nextjs', 'react', 'typescript', 'testing', 'fullstack', 'aspnet'],
     },
   },
 }
