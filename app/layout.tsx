@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     url: 'https://your-domain.com',
     siteName: 'AI Fullstack Accelerator',
     title: 'AI Fullstack Accelerator',
-    description: 'A fullstack accelerator for building AI-powered applications with modern web technologies.',
+    description: 'A full-stack starter template built with Next.js and ASP.NET Core. Clone it, rename the example entity, and ship.',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'AI Fullstack Accelerator' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AI Fullstack Accelerator',
-    description: 'A fullstack accelerator for building AI-powered applications with modern web technologies.',
+    description: 'A full-stack starter template built with Next.js and ASP.NET Core. Clone it, rename the example entity, and ship.',
     images: ['/og-image.png'],
   },
   robots: {
