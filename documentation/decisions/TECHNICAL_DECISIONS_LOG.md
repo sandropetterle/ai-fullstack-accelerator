@@ -1,12 +1,54 @@
 # Technical Decisions Log — AI Fullstack Accelerator
 
-**Last Updated:** 2026-09-23
+**Last Updated:** 2026-09-24
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **15 active decisions | 0 archived**
+> **16 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 16: Core owns a telemetry abstraction; Application Insights lives in Infrastructure
+
+**Date:** 2026-09-24
+**Title:** Replace `TelemetryClient` in `ArticleService` with a Core-owned `IAppTelemetry`; remove `Microsoft.ApplicationInsights` from `Accelerator.Core`; enforce the rule with a test
+**Category:** Architecture
+**Status:** Active
+
+### Context / Problem
+
+`docs/ARCHITECTURE_DECISIONS.md` §1 states that `Core` has no framework dependencies. The code contradicted it: `Accelerator.Core.csproj` referenced `Microsoft.ApplicationInsights` 2.23.0 and `ArticleService` injected `TelemetryClient` directly for seven `TrackEvent`/`TrackMetric` calls. Core unit tests had to build a real `TelemetryClient` over a fake channel to observe telemetry.
+
+### Decision
+
+- New interface `Accelerator.Core.Interfaces.IAppTelemetry` (`TrackEvent(name, properties)`, `TrackMetric(name, value)`), shaped after the two calls Core actually makes.
+- `Accelerator.Infrastructure.ApplicationInsightsAppTelemetry` implements it over `TelemetryClient`; `AddInfrastructure()` registers it as a singleton next to `AddApplicationInsightsTelemetry()`.
+- `Microsoft.ApplicationInsights` removed from `Accelerator.Core.csproj`. Core's only package reference is now `Microsoft.Extensions.Caching.Abstractions` (interfaces only, for `IMemoryCache`).
+- `CoreDependencyRuleTests` fails the build if the Core assembly references any `Microsoft.AspNetCore*`, `Microsoft.EntityFrameworkCore*` or `Microsoft.ApplicationInsights*` assembly, so §1 is enforced by CI rather than only documented.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Soften ADR §1 to allow the App Insights dependency | The dependency rule is the point of §1; a vendor SDK in Core is exactly what it exists to prevent, and the fix is small |
+| `ILogger` / `System.Diagnostics.Metrics` instead of a custom interface | Both are viable vendor-neutral options, but they change what reaches Application Insights (custom events become traces; metrics need an OpenTelemetry exporter). Out of scope for a dependency fix; `IAppTelemetry` keeps the telemetry output identical |
+| Move `IMemoryCache` behind an abstraction too | `Microsoft.Extensions.Caching.Abstractions` is an interfaces-only package with no framework or vendor coupling; wrapping it adds indirection without a benefit |
+
+### Consequences
+
+- Event names, property keys and metric names are unchanged, so existing App Insights queries and dashboards keep working.
+- Swapping the telemetry vendor (e.g. OpenTelemetry) is now an Infrastructure-only change.
+- Core tests assert against an in-memory `FakeAppTelemetry`; the `TelemetryClient` forwarding is covered by `ApplicationInsightsAppTelemetryTests` in `Accelerator.Api.Tests`.
+
+### Files Changed
+
+- `backend/src/Accelerator.Core/Interfaces/IAppTelemetry.cs` (new), `Services/ArticleService.cs`, `Accelerator.Core.csproj`
+- `backend/src/Accelerator.Infrastructure/ApplicationInsightsAppTelemetry.cs` (new), `InfrastructureServiceCollectionExtensions.cs`
+- `backend/tests/Accelerator.Core.Tests/Services/ArticleServiceTests.cs`, `Architecture/CoreDependencyRuleTests.cs` (new)
+- `backend/tests/Accelerator.Api.Tests/Infrastructure/ApplicationInsightsAppTelemetryTests.cs` (new)
+- `docs/ARCHITECTURE_DECISIONS.md` §1
 
 ---
 

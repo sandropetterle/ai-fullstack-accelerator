@@ -2,7 +2,6 @@ using Accelerator.Core.Entities;
 using Accelerator.Core.Enums;
 using Accelerator.Core.Interfaces;
 using Accelerator.Core.ValueObjects;
-using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Accelerator.Core.Services;
@@ -14,7 +13,7 @@ public class ArticleService : IArticleService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMemoryCache _cache;
     private readonly TimeProvider _timeProvider;
-    private readonly TelemetryClient _telemetry;
+    private readonly IAppTelemetry _telemetry;
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
@@ -24,7 +23,7 @@ public class ArticleService : IArticleService
         IUnitOfWork unitOfWork,
         IMemoryCache cache,
         TimeProvider timeProvider,
-        TelemetryClient telemetry)
+        IAppTelemetry telemetry)
     {
         _articleRepository = articleRepository;
         _tagRepository = tagRepository;

@@ -103,10 +103,10 @@ flowchart TD
 - `IMemoryCache` for featured, trending, and related articles
 - Cache keys: `featured_articles`, `trending_articles`, `related_articles_{slug}`
 - TTL: 5 minutes; `VoteForArticleAsync` invalidates `featured_articles` + `trending_articles`
-- Cache hit/miss emitted as `FeaturedArticlesCacheHit` / `TrendingArticlesCacheHit` metrics via `TelemetryClient`
+- Cache hit/miss emitted as `FeaturedArticlesCacheHit` / `TrendingArticlesCacheHit` metrics via `IAppTelemetry`
 
 ### Business Telemetry
-- `TelemetryClient` injected into `ArticleService`
+- `IAppTelemetry` (Core interface) injected into `ArticleService`; `ApplicationInsightsAppTelemetry` in `Accelerator.Infrastructure` forwards to `TelemetryClient`
 - Events: `ArticleViewed` (slug, category), `ArticleVoted` (articleId), `ArticleSearched` (search, category, tagCount), `ArticleCreated` (slug, category), `ArticleUpdated` (slug, category)
 - Metrics: `FeaturedArticlesCacheHit`, `TrendingArticlesCacheHit` (1 = hit, 0 = miss)
 

@@ -1,3 +1,4 @@
+using Accelerator.Core.Interfaces;
 using Accelerator.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -21,6 +22,7 @@ public static class InfrastructureServiceCollectionExtensions
             options.EnableAdaptiveSampling = true;
             options.EnableQuickPulseMetricStream = true;
         });
+        services.AddSingleton<IAppTelemetry, ApplicationInsightsAppTelemetry>();
 
         // Caching and time abstraction
         services.AddMemoryCache();
