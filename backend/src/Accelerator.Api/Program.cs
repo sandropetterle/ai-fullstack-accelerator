@@ -9,6 +9,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -189,7 +190,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // Health check endpoints
-app.MapHealthChecks("/health");
+// /health is liveness (Container Apps startup + liveness probes): the process is up and serving.
+// It runs no checks, so a database outage doesn't make the platform restart healthy replicas.
+// /health/ready is readiness: runs every registered check, including the DbContext check.
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready");
 
 // Security headers

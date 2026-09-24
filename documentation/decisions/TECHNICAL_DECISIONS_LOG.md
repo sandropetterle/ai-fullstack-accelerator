@@ -4,9 +4,47 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **18 active decisions | 0 archived**
+> **19 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 19: `/health` is liveness only; `/health/ready` checks dependencies
+
+**Date:** 2026-09-24
+**Title:** Stop running the database check on the liveness endpoint
+**Category:** Infrastructure / Reliability
+**Status:** Active
+
+### Context / Problem
+
+Found by the new `container-images` CI job (Decision 18): the production API image started and listened on 8080, but `/health` returned 503 because the database it was pointed at had no schema. `HEALTH_API.md` and the Bicep both treat `/health` as liveness and `/health/ready` as readiness. `Program.cs` mapped both to the same checks, including `AddDbContextCheck`. The Container Apps startup and liveness probes use `/health`, so in production a database outage would fail liveness and make the platform restart every API replica in a loop, even though restarting cannot fix the database. It would also have failed the startup probe on a fresh deploy until migrations were applied.
+
+### Decision
+
+- `/health` runs no checks (`Predicate = _ => false`): 200 `Healthy` whenever the process is serving requests.
+- `/health/ready` runs every registered check (the `DbContext` check today): 503 `Unhealthy` when a dependency is down, which takes the replica out of traffic without restarting it.
+- `HealthEndpointTests` registers a failing check and asserts `/health` → 200, `/health/ready` → 503 (red before the fix, green after).
+- `HEALTH_API.md` corrected: `/health/ready` returns plain text, not the JSON shape it documented.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Point the liveness probe at a new endpoint and leave `/health` as is | `/health` is already documented as liveness and used by the deploy workflow's health check; changing the probe hides the mismatch instead of fixing it |
+| Keep the DB check on liveness, raise the probe's failure threshold | Delays the restart loop instead of preventing it |
+
+### Consequences
+
+- A database outage now shows up as replicas going not-ready (no traffic), not as crash-looping containers.
+- The deploy workflows' post-deploy health check (`/health` must return `Healthy`) now confirms the app is up, not that the database is reachable; `/health/ready` is the dependency check.
+
+### Files Changed
+
+- `backend/src/Accelerator.Api/Program.cs`
+- `backend/tests/Accelerator.Api.Tests/IntegrationTests/HealthEndpointTests.cs` (new)
+- `documentation/api/HEALTH_API.md`
 
 ---
 
