@@ -45,7 +45,7 @@
       // TODO: Set to your OIDC issuer URL.
       // Azure Entra External ID: https://<tenant>.ciamlogin.com/<tenant>.onmicrosoft.com/v2.0
       // Auth0: https://<domain>.auth0.com/
-      // See deployment/AUTH_SETUP_GUIDE.md for full instructions.
+      // See documentation/operations/AUTH_SETUP_GUIDE.md for full instructions.
       "value": ""
     },
     "authEntraClientId": {

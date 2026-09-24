@@ -209,4 +209,4 @@ The most significant architectural choices are recorded in `documentation/decisi
 | Entity model, seeding, enum mapping | [DATA_MODEL.md](DATA_MODEL.md) |
 | Auth, CORS, CSP, rate limiting, security headers | [SECURITY_OVERVIEW.md](SECURITY_OVERVIEW.md) |
 | Bicep IaC, resource inventory, deploy workflow | [../operations/INFRASTRUCTURE_MANAGEMENT.md](../operations/INFRASTRUCTURE_MANAGEMENT.md) |
-| Azure deployment guide | [../../deployment/README.md](../../deployment/README.md) |
+| Azure deployment guide | [../../infrastructure/README.md](../../infrastructure/README.md) |

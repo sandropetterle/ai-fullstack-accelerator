@@ -14,7 +14,7 @@ on:
       - 'package-lock.json'
       - 'next.config.mjs'
       - 'tailwind.config.ts'
-      - 'lighthouserc.yml'
+      - 'lighthouserc.json'
       - '.storybook/**'
       - '.github/workflows/frontend-container-deploy.yml'
   workflow_dispatch:

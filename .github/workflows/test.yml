@@ -320,10 +320,51 @@ jobs:
       - name: Validate Bicep templates
         run: az bicep build --file infrastructure/main.bicep
 
+  # Builds the production images the deploy workflows would push, then starts each one
+  # and checks it answers. No registry, no Azure: proves the Dockerfiles work on every PR.
+  container-images:
+    name: Container Images (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            context: backend
+            port: 8080
+            path: /health
+          - image: web
+            context: .
+            port: 3000
+            path: /
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build image
+        run: docker build -t accelerator-${{ matrix.image }}:ci ${{ matrix.context }}
+
+      - name: Start container and check it responds
+        run: |
+          docker run -d --name smoke -p ${{ matrix.port }}:${{ matrix.port }} accelerator-${{ matrix.image }}:ci
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null "http://localhost:${{ matrix.port }}${{ matrix.path }}"; then
+              echo "${{ matrix.image }} answered 2xx on ${{ matrix.path }}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "${{ matrix.image }} did not answer on ${{ matrix.path }} within 60s"
+          docker logs smoke
+          exit 1
+
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [backend-tests, migrations, frontend-tests, validate-infrastructure, e2e-tests]
+    needs: [backend-tests, migrations, frontend-tests, validate-infrastructure, container-images, e2e-tests]
     if: always()
 
     steps:
@@ -348,6 +389,11 @@ jobs:
 
           if [[ "${{ needs.validate-infrastructure.result }}" == "failure" ]]; then
             echo "validate-infrastructure: FAILED"
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.container-images.result }}" == "failure" ]]; then
+            echo "container-images: FAILED"
             FAILED=true
           fi
 

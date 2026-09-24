@@ -42,8 +42,9 @@ Why ship it this way, and what it costs: [Decision 16](docs/ARCHITECTURE_DECISIO
 | CMS | Optional headless CMS (Strapi 5): bring your own, see [Optional: Strapi CMS](#optional-strapi-cms) |
 | Database | SQLite (dev) / SQL Server (prod) |
 | IaC | Azure Bicep (Container Apps, Key Vault, SQL, MySQL, Storage, ACR) |
-| CI/CD | GitHub Actions (test → build → deploy gate) |
-| Testing | Jest + RTL, xUnit + Moq, Playwright (cross-browser), Lighthouse CI, Chromatic |
+| CI | GitHub Actions on every PR: lint, type-check, build, unit + integration tests with a 70% coverage gate, EF Core migration checks for both providers, Bicep compile, production container images built and started. Cross-browser E2E on every push to `master` |
+| CD | Build → push → deploy → health check → rollback workflows for Azure Container Apps, **opt-in** (see [Deploying to Azure](#deploying-to-azure-opt-in)) |
+| Testing | Jest + RTL, xUnit + Moq, Playwright (Chromium, Firefox, WebKit); Lighthouse CI and Chromatic run with the opt-in deploy workflows |
 | Observability | Azure Application Insights (backend telemetry + frontend-ready) |
 
 ## Quick Start
@@ -96,6 +97,14 @@ dotnet ef database update --project backend/src/Accelerator.Data.SqlServer --sta
 
 The SQL Server connection string above matches the `sqlserver` service in `docker-compose.yml` (`docker compose up -d`). CI applies both sets to fresh databases and runs `dotnet ef migrations has-pending-model-changes` for each.
 
+## Deploying to Azure (opt-in)
+
+The repo includes Bicep IaC for Azure Container Apps (`infrastructure/`) and three deploy workflows (frontend, backend, CMS) that build and push images, deploy them, health-check the result and roll back on failure. Every job that touches Azure, plus the Lighthouse CI and Chromatic jobs, runs only when the repository variable `AZURE_DEPLOY_ENABLED` is `true`. Forks and fresh copies of the template stay green without Azure credentials.
+
+To turn deployment on: provision the infrastructure, set up GitHub OIDC federation, add the secrets and variables, then set `AZURE_DEPLOY_ENABLED=true`. Step by step: [infrastructure/README.md](infrastructure/README.md) and [.github/REPO_VARIABLES.md](.github/REPO_VARIABLES.md).
+
+What is verified today, on every PR: the Bicep compiles, and both production images build and start. The deploy workflows themselves have not yet run against a live Azure subscription from this repository.
+
 ## Documentation
 
 | Guide | Description |
@@ -136,7 +145,7 @@ The frontend does **not** require Strapi to run. `lib/cms/client.ts`'s `fetchStr
 │       └── Accelerator.Infrastructure/ # AppInsights, Caching, Rate Limiting
 ├── cms/                    # Dockerfile only — scaffold Strapi 5 yourself, see Optional: Strapi CMS above
 ├── infrastructure/         # Azure Bicep IaC
-├── deployment/             # Deployment scripts and guides
+├── deployment/             # Azure setup/cleanup scripts (OIDC, registry access)
 ├── docs/                   # Accelerator guides (getting started, tech swap, etc.)
 ├── documentation/          # Architecture, API, testing, operations docs
 ├── scripts/                # rename-entity + setup-project scripts

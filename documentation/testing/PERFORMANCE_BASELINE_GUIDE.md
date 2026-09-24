@@ -172,32 +172,35 @@ Copy this template for each page and test run.
 
 ## 6. Lighthouse CI (GitHub Actions)
 
-Lighthouse CI runs automatically on every PR and push to main.
+Lighthouse CI is the `lhci` job in `.github/workflows/frontend-container-deploy.yml`. It runs on pushes to `master` that touch the frontend, **only when the repository variable `AZURE_DEPLOY_ENABLED` is `true`** (it needs `LHCI_API_BASE_URL` pointing at a deployed API so server-rendered pages have data). It does not run on pull requests. See [infrastructure/README.md](../../infrastructure/README.md#deploying-the-apps) for turning the deploy workflows on.
 
-**Configuration:** `lighthouserc.json` at project root.
+**Configuration:** [`lighthouserc.json`](../../lighthouserc.json) at the project root. The workflow builds the app and starts `npm run start` on port 3000 itself, so the config sets only the URLs and assertions:
 
 ```json
 {
   "ci": {
     "collect": {
-      "startServerCommand": "npm start",
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/articles"
-      ]
+      ],
+      "numberOfRuns": 3
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", {"minScore": 0.80}],
-        "first-contentful-paint": ["error", {"maxNumericValue": 1800}],
-        "largest-contentful-paint": ["error", {"maxNumericValue": 2500}],
-        "interactive": ["error", {"maxNumericValue": 5000}],
-        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}]
+        "categories:performance": ["error", { "minScore": 0.8 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 1800 }],
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500 }],
+        "interactive": ["warn", { "maxNumericValue": 5000 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
       }
     }
   }
 }
 ```
+
+Individual timing metrics are `warn`, not `error`: shared CI runners vary too much from run to run for a single slow FCP to block a deploy. The overall performance score (median of 3 runs), accessibility score and layout shift are the hard gates. To run it locally: `npm run build && npm run start`, then `npx lhci autorun` in a second terminal.
 
 ---
 

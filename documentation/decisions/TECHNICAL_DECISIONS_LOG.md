@@ -4,9 +4,47 @@
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **17 active decisions | 0 archived**
+> **18 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 18: Verify deployable artifacts on every PR; commit the Lighthouse CI config
+
+**Date:** 2026-09-24
+**Title:** New `container-images` CI job builds and starts both production images; `lighthouserc.json` committed; deploy stays opt-in
+**Category:** Infrastructure / CI
+**Status:** Active
+
+### Context / Problem
+
+The README called the accelerator production-ready and listed a "test → build → deploy gate", Lighthouse CI and Chromatic. In practice every job that builds images, deploys, or runs Lighthouse/Chromatic is gated by `AZURE_DEPLOY_ENABLED` (Decision 10), which has never been set, so across all runs of the deploy workflows those jobs were skipped. Nothing else built the production Dockerfiles. `lhci autorun` had no config file (the guide named `lighthouserc.json`, the workflow's path filter named `lighthouserc.yml`, neither existed).
+
+### Decision
+
+- **`container-images` job in `test.yml`** (matrix: `api`, `web`): `docker build` of `backend/Dockerfile` and the root `Dockerfile`, then `docker run` and poll `/health` (API) or `/` (web) for up to 60 s. No registry, no Azure, no secrets. `test-summary` fails if it fails.
+- **`lighthouserc.json`**: URLs `/` and `/articles`, 3 runs; hard gates on performance score ≥ 0.8, accessibility ≥ 0.9 and CLS ≤ 0.1; FCP/LCP/TTI as warnings because shared runners are too noisy for single-metric gates. No `startServerCommand`, because the workflow starts the server itself. The workflow path filter now names the `.json` file.
+- **Deploy stays opt-in.** The README says so, says how to turn it on, and says what is and isn't verified.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Run the deploy once against a throwaway resource group to back the "production-ready" claim | Costs Azure money and needs OIDC, secrets and lock removal on teardown; a separate decision for the maintainer (not taken here) |
+| Leave Lighthouse/Chromatic listed as included | Misleading: they have never run |
+| Make Lighthouse run on PRs without Azure | SSR pages need a reachable API (`LHCI_API_BASE_URL`); without one the scores measure error states |
+
+### Consequences
+
+- A broken Dockerfile or an image that fails to boot now fails the PR, not a future deploy.
+- The deploy workflows themselves remain unexercised until `AZURE_DEPLOY_ENABLED` is set.
+
+### Files Changed
+
+- `.github/workflows/test.yml`, `.github/workflows/frontend-container-deploy.yml`
+- `lighthouserc.json` (new), `documentation/testing/PERFORMANCE_BASELINE_GUIDE.md`
+- `README.md`, `infrastructure/README.md` (new)
 
 ---
 

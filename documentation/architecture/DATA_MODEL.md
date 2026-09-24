@@ -168,4 +168,4 @@ dotnet ef database update \
 dotnet ef migrations has-pending-model-changes --project backend/src/Accelerator.Data --startup-project backend/src/Accelerator.Api
 ```
 
-See [../../deployment/database-migration.md](../../deployment/database-migration.md) for production migration procedures.
+See the README's [Database Migrations](../../README.md#database-migrations) section and [RUNBOOK.md](../operations/RUNBOOK.md) for production migration procedures.
