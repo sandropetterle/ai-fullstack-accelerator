@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Accelerator.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("api")]
 public class AuthController : ControllerBase
 {
     /// <summary>

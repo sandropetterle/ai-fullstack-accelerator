@@ -50,12 +50,12 @@ See [SECURITY_OVERVIEW.md](../architecture/SECURITY_OVERVIEW.md) for the full au
 
 ## Rate Limiting
 
-All API endpoints are protected by rate limiting. Exceeding a limit returns `429 Too Many Requests`.
+All API controller endpoints are rate limited per client IP (taken from `X-Forwarded-For` behind the Container Apps ingress) and counted per replica. Exceeding a limit returns `429 Too Many Requests`.
 
 | Policy | Limit | Applied To |
 |--------|-------|------------|
-| `api` (sliding window) | 50 req/min per IP | All `/articles` endpoints by default |
-| `action` (fixed window) | 10 req/min per IP | `POST /articles/{id}/vote` only |
+| `api` (sliding window, up to 5 queued) | 50 req/min per IP | All `/articles` and `/auth` endpoints |
+| `action` (fixed window, no queue) | 10 req/min per IP | `POST /articles/{id}/vote` (replaces `api` for this endpoint) |
 
 ---
 

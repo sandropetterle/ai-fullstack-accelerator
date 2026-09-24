@@ -106,9 +106,14 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Why:** In-process rate limiting is testable in-process (no gateway to stand up), portable (works on any host — Azure Container Apps, Kubernetes, bare metal), and requires no additional infrastructure component. A gateway-level rate limiter is harder to test in CI.
 
-**Where it lives:** `backend/src/Accelerator.Infrastructure/InfrastructureServiceCollectionExtensions.cs` — rate limiter registration is part of `AddInfrastructure()`. Three policies: `fixed` (100/min), `api` (sliding, 50/min) and `action` (10/min, applied to voting).
+**Where it lives:** `backend/src/Accelerator.Infrastructure/InfrastructureServiceCollectionExtensions.cs` — rate limiter registration is part of `AddInfrastructure()`. Two policies, each partitioned per client IP: `api` (sliding window, 50/min, on every controller via `[EnableRateLimiting("api")]`) and `action` (fixed window, 10/min, no queue, on the vote endpoint). `RateLimitingTests` asserts the 429 and that one limited client doesn't affect another.
 
-**Trade-off:** Limits are counted per container replica, so the effective limit scales with the replica count. As configured, each policy is also a single bucket shared by all clients rather than one per client, so one heavy client can use up the budget for everyone. Per-client partitioning needs the client IP, which behind Container Apps ingress means trusting `X-Forwarded-For` (`UseForwardedHeaders`). No test asserts a 429 yet.
+**Where the client IP comes from:** Behind Container Apps ingress, the connection's remote address is the proxy, so `UseForwardedHeaders` reads `X-Forwarded-For`. Only the last hop is used (`ForwardLimit = 1`), which is the address the ingress itself appended, so a client can't pick its partition by sending its own header.
+
+**Trade-off:**
+- Limits are counted per container replica, so the effective limit scales with the replica count.
+- Trusting `X-Forwarded-For` from any proxy is only safe while the API is reachable solely through an ingress that sets it. Exposed directly, a client could spoof its partition; pin `KnownProxies`/`KnownIPNetworks` in that case.
+- Server-side rendering calls from the Next.js app all arrive from the web app's outbound IP and share one partition. ISR keeps that traffic low, but a busy dynamic listing page can hit the `api` limit. Raise it, or exempt internal traffic, for high-traffic sites.
 
 ---
 
