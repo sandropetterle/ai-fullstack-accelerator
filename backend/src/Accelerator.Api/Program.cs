@@ -1,3 +1,4 @@
+using Accelerator.Api.Authentication;
 using Accelerator.Api.Middleware;
 using Accelerator.Core.Interfaces;
 using Accelerator.Core.Services;
@@ -6,6 +7,7 @@ using Accelerator.Data.Repositories;
 using Accelerator.Infrastructure;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -128,8 +130,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
 
 // Authentication — provider-agnostic OIDC JWT validation.
-// Guard clause: when Authority is empty the API boots without an authentication scheme,
-// preserving backward compatibility for integration tests and local dev without an OIDC provider.
+// When Authority is empty (local dev without an OIDC provider) the API registers a scheme that
+// never authenticates: public endpoints work, protected endpoints return 401/403.
 var authAuthority = builder.Configuration["Authentication:Authority"];
 if (!string.IsNullOrEmpty(authAuthority))
 {
@@ -149,6 +151,12 @@ if (!string.IsNullOrEmpty(authAuthority))
                 NameClaimType = "name"
             };
         });
+}
+else
+{
+    builder.Services.AddAuthentication(UnconfiguredAuthenticationHandler.SchemeName)
+        .AddScheme<AuthenticationSchemeOptions, UnconfiguredAuthenticationHandler>(
+            UnconfiguredAuthenticationHandler.SchemeName, _ => { });
 }
 
 var app = builder.Build();

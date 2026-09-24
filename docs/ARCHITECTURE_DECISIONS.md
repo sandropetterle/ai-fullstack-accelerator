@@ -32,17 +32,21 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Why:** Repository interfaces in `Core` mean services never import EF Core — they depend on `IArticleRepository`, not `DbContext`. This makes services trivially unit-testable with a mock repository. The InMemory provider in tests avoids I/O entirely while still exercising LINQ-to-Objects translation.
 
-**What this is not:** A generic `IRepository<T>` abstraction over EF Core. Each repository has domain-specific methods (`GetBySlugAsync`, `GetFeaturedAsync`) that reflect actual query needs — not a CRUD wrapper that loses EF's expressive query API.
+**What this is not:** A generic `IRepository<T>` abstraction over EF Core. Each repository has domain-specific methods (`GetBySlugAsync`, `GetFeaturedArticlesAsync`) that reflect actual query needs — not a CRUD wrapper that loses EF's expressive query API.
+
+**Trade-off:** InMemory is not a relational database. It doesn't enforce constraints and can't run bulk operations such as `ExecuteUpdateAsync`, so `ArticleRepository.IncrementVoteCountAsync` has a relational path (an atomic `UPDATE ... SET VoteCount = VoteCount + 1`) and an InMemory fallback, and only the fallback runs in tests. The CI migrations job applies both schemas to real SQLite and SQL Server databases, but no test runs queries against them.
 
 ---
 
 ## 3. SQLite for Development, SQL Server for Production
 
-**Decision:** EF Core selects the database provider at runtime based on the `ConnectionStrings__DefaultConnection` environment variable. Empty → SQLite. Non-empty → SQL Server.
+**Decision:** EF Core selects the database provider at runtime from `ConnectionStrings:DefaultConnection` (any configuration source; in containers, the `ConnectionStrings__DefaultConnection` environment variable). Empty → SQLite. Non-empty → SQL Server.
 
-**Why:** SQLite requires zero installation and creates its database file automatically. A developer can clone the repo and have a running backend in under two minutes with no Docker, no cloud, no database server. The EF Core abstraction means the switch to SQL Server requires only a connection string — no C# changes.
+**Why:** SQLite requires zero installation and creates its database file automatically. A developer can clone the repo and have a running backend in under two minutes with no Docker, no cloud, no database server. Switching an environment to SQL Server takes only a connection string, with no C# changes.
 
-**See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decision 5.
+**Trade-off:** Two providers means two EF Core migration sets (`Accelerator.Data` for SQLite, `Accelerator.Data.SqlServer` for SQL Server), and every model change has to be added to both; CI fails if either set drifts from the model. Dev also doesn't match prod: SQLite's type system, collation and concurrency behaviour differ from SQL Server's, so provider-specific bugs only show up against SQL Server (`docker compose up -d` starts one locally).
+
+**See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decisions 5 and 15.
 
 ---
 
@@ -52,9 +56,11 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Why:** Server components fetch data at render time on the server, so no client-side loading spinners or fetch waterfalls. The HTML delivered to the browser is complete and SEO-indexable. Client JavaScript bundle size is reduced — components that never need browser APIs ship zero JS.
 
-**ISR (Incremental Static Regeneration):** Article listing and detail pages use `revalidate` to cache rendered HTML and regenerate it in the background. This gives static-site performance with near-real-time freshness — without the full rebuild cycle of traditional SSG.
+**ISR (Incremental Static Regeneration):** Article detail pages (`app/articles/[slug]/page.tsx`, `revalidate = 600`, pre-rendered via `generateStaticParams`) cache rendered HTML and regenerate it in the background, as do the home, About and Docs pages. See §5.
 
-**When SSR would be preferred:** User-specific pages (profile, dashboard) that cannot be cached. Those use `cache: 'no-store'` on fetch calls.
+**Where rendering is dynamic instead:** The article listing reads `searchParams` (filters, search, sort, page), so Next.js renders it on every request; its `revalidate` export does not cache its HTML. Pages that depend on the signed-in user (`/articles/new`, `/articles/[slug]/edit`, `/login`) call `auth()`, which also makes them dynamic.
+
+**Trade-off:** The server/client split is a boundary developers have to keep in their heads. Anything interactive needs its own `"use client"` component, and props crossing the boundary must be serializable. Getting it wrong shows up as build errors or hydration warnings rather than obvious bugs.
 
 ---
 
@@ -62,19 +68,23 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Decision:** Article pages revalidate on a time interval (ISR), not on every request (SSR) or only at build time (SSG).
 
-**Why:** SSG is too stale for a content platform — new articles only appear after a full rebuild. SSR renders on every request, which is expensive at scale and eliminates CDN caching. ISR caches the rendered page at the CDN edge and regenerates it in the background after the revalidation window expires. This gives CDN-speed responses with acceptable freshness.
+**Why:** SSG is too stale for a content platform — new articles only appear after a full rebuild. SSR renders on every request, so every page view costs a render plus an API call and a database query. ISR serves a cached render and regenerates it in the background once the revalidation window expires, so most requests never reach the API.
 
-**Trade-off:** Visitors may see content that is up to `revalidate` seconds old. For an article platform this is acceptable. For real-time data (stock prices, live scores), use SSR or WebSockets.
+**Where the cache lives:** The frontend runs as a Next.js `standalone` server on Azure Container Apps, and the ISR cache is local to each container replica. It is not shared between replicas, and it is lost when the app scales to zero (§11), so the first request after an idle period pays a full render. The template does not provision a CDN. Putting Azure Front Door (or any CDN honouring `Cache-Control`) in front of the web app would give edge caching on top, at extra cost.
+
+**Trade-off:** Visitors may see content that is up to `revalidate` seconds old. For an article platform this is acceptable. For real-time data (stock prices, live scores), use SSR or WebSockets. With several replicas, two visitors can briefly see different versions of the same page.
 
 ---
 
 ## 6. Provider-Agnostic Authentication
 
-**Decision:** Auth.js (Next Auth v5) handles the frontend session. The backend validates JWTs from any OIDC-compliant provider. Switching providers requires only env var changes.
+**Decision:** Auth.js (Next Auth v5) handles the frontend session using a generic OIDC provider definition. The backend validates JWTs from any OIDC-compliant provider.
 
-**Why:** Locking to a single identity provider (Azure Entra, Auth0, Cognito) creates vendor dependency. By reading `AUTH_ENTRA_ISSUER`, `AUTH_ENTRA_CLIENT_ID`, and `AUTH_ENTRA_CLIENT_SECRET` from environment variables, any OIDC-compliant provider works without code changes. The backend's JWT validation is equally provider-agnostic — `Authentication:Authority` and `Authentication:Audience` are the only configuration points.
+**Why:** Locking to a single identity provider (Azure Entra, Auth0, Cognito) creates vendor dependency. The backend is fully provider-agnostic: `Authentication:Authority` and `Authentication:Audience` are its only configuration points. The frontend reads the issuer, client ID and client secret from environment variables (`AUTH_ENTRA_ISSUER`, `AUTH_ENTRA_CLIENT_ID`, `AUTH_ENTRA_CLIENT_SECRET`), so pointing it at another OIDC provider is mostly configuration.
 
-**Local dev without an OIDC provider:** When `Authentication:Authority` is empty, the backend boots without an authentication scheme. Public endpoints work; protected endpoints return 401. This is intentional — it keeps local development friction-free.
+**Local dev without an OIDC provider:** When `Authentication:Authority` is empty, the backend registers a scheme that never authenticates anyone. Public endpoints work; protected endpoints return 401 (covered by `UnconfiguredAuthenticationTests`). This keeps local development friction-free.
+
+**Trade-off:** "Mostly configuration" is not "only configuration". The defaults are Entra-flavoured, and a few places need editing for another provider: the provider `id`/`name` and fallback API scopes in `auth.ts`, role extraction from a `roles` claim (`auth.ts`, and `RoleClaimType = "roles"` in the backend), and the CSP hosts `*.ciamlogin.com` / `login.microsoftonline.com` in `next.config.mjs`. The variable names keep an `ENTRA` prefix even when the provider isn't Entra.
 
 **See also:** `docs/TECHNOLOGY_SWAP_GUIDE.md` Auth Provider section.
 
@@ -94,9 +104,11 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Decision:** Rate limiting is implemented inside the ASP.NET Core application using the built-in `AddRateLimiter` / `UseRateLimiter` middleware, not at a gateway or load balancer.
 
-**Why:** In-process rate limiting is testable (integration tests can hit the limiter and assert 429 responses), portable (works on any host — Azure Container Apps, Kubernetes, bare metal), and requires no additional infrastructure component. A gateway-level rate limiter is easier to bypass and harder to test in CI.
+**Why:** In-process rate limiting is testable in-process (no gateway to stand up), portable (works on any host — Azure Container Apps, Kubernetes, bare metal), and requires no additional infrastructure component. A gateway-level rate limiter is harder to test in CI.
 
-**Where it lives:** `backend/src/Accelerator.Infrastructure/InfrastructureServiceCollectionExtensions.cs` — rate limiter registration is part of `AddInfrastructure()`.
+**Where it lives:** `backend/src/Accelerator.Infrastructure/InfrastructureServiceCollectionExtensions.cs` — rate limiter registration is part of `AddInfrastructure()`. Three policies: `fixed` (100/min), `api` (sliding, 50/min) and `action` (10/min, applied to voting).
+
+**Trade-off:** Limits are counted per container replica, so the effective limit scales with the replica count. As configured, each policy is also a single bucket shared by all clients rather than one per client, so one heavy client can use up the budget for everyone. Per-client partitioning needs the client IP, which behind Container Apps ingress means trusting `X-Forwarded-For` (`UseForwardedHeaders`). No test asserts a 429 yet.
 
 ---
 
@@ -104,9 +116,9 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Decision:** UI primitives come from shadcn/ui, which copies component source code into `components/ui/` rather than installing a versioned npm package.
 
-**Why:** Traditional component libraries (Material UI, Ant Design) ship as npm packages. Upgrading a major version can break dozens of components at once. shadcn/ui components are copied source — you own the code. Customization is editing a file, not fighting a theme system. There is no package version to pin, no breaking-change upgrade path, and no bundle overhead from unused components.
+**Why:** Traditional component libraries (Material UI, Ant Design) ship as npm packages. Upgrading a major version can break dozens of components at once. shadcn/ui components are copied source — you own the code. Customization is editing a file, not fighting a theme system. There is no bundle overhead from unused components.
 
-**Trade-off:** No automatic updates. New shadcn/ui component versions must be manually copied in. This is a deliberate choice — stability over convenience.
+**Trade-off:** No automatic updates to the copied components; new shadcn/ui versions must be copied in by hand. The copied code still depends on versioned packages underneath (`@radix-ui/*`, `class-variance-authority`), which Dependabot updates like any other dependency. This is a deliberate choice: stability over convenience.
 
 ---
 
@@ -114,9 +126,9 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Decision:** Infrastructure-as-code uses Azure Bicep in `infrastructure/`.
 
-**Why:** Bicep is Azure-native: it compiles directly to ARM templates, supports all Azure resource types on day one, and is maintained by the Azure team. For a project targeting Azure, Bicep has less abstraction overhead than Terraform's Azure provider. Bicep files are checked into the repo, so Dependabot can track Azure resource API version updates (e.g., `2024-01-01` → `2024-03-01`) and open PRs.
+**Why:** Bicep is Azure-native: it compiles directly to ARM templates, supports all Azure resource types on day one, and is maintained by the Azure team. For a project targeting Azure, Bicep has less abstraction overhead than Terraform's Azure provider, and there is no state file to store and lock. CI compiles `infrastructure/main.bicep` on every push (`az bicep build`), so syntax and type errors fail the build.
 
-**Trade-off:** Bicep is Azure-only. If you move to AWS or GCP, replace `infrastructure/` with Terraform or the target platform's IaC tool. See `docs/TECHNOLOGY_SWAP_GUIDE.md`.
+**Trade-off:** Bicep is Azure-only. Dependabot has no Bicep ecosystem, so resource API versions (for example `Microsoft.App/containerApps@2023-05-01`) are not bumped automatically and need a periodic manual review. If you move to AWS or GCP, replace `infrastructure/` with Terraform or the target platform's IaC tool. See `docs/TECHNOLOGY_SWAP_GUIDE.md`.
 
 ---
 
@@ -128,25 +140,31 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Why not App Service:** App Service does not scale to zero on the standard tier. Container Apps is the right abstraction level — more managed than Kubernetes, more flexible than App Service.
 
+**Trade-off:** Scale-to-zero (`minReplicas: 0` for the API, web and CMS apps in `infrastructure/modules/containerApps.bicep`) means cold starts: the first request after an idle period waits for a container to start, and the per-replica ISR cache (§5) starts empty. Raise `minReplicas` to 1 for latency-sensitive environments, at the cost of always-on compute. Scale-to-zero only covers the containers; Azure SQL, MySQL, Key Vault and the registry are billed whether or not anything is running.
+
 ---
 
 ## 12. CMS Isolated Behind Docker Profile
 
 **Decision:** Strapi 5 and MySQL only start when `docker compose --profile cms up -d` is used. Default `docker compose up -d` starts only SQL Server.
 
-**Why:** Strapi adds approximately 1 GB RAM overhead and a MySQL instance. Most developers working on the API or frontend do not need the CMS. Making CMS opt-in (via Docker Compose profiles) avoids penalizing the common case. The frontend falls back to hardcoded content when Strapi is unavailable, so CMS absence never breaks the application.
+**Why:** Strapi and its MySQL instance add up to about 1 GB of RAM (each is capped at 512 MB in `docker-compose.yml`). Most developers working on the API or frontend do not need the CMS. Making CMS opt-in (via Docker Compose profiles) avoids penalizing the common case. The frontend falls back to hardcoded content when Strapi is unavailable, so CMS absence never breaks the application.
 
-**See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decision 3 and `docs/CMS_REMOVAL_GUIDE.md`.
+**Trade-off:** The CMS is bring-your-own. `cms/` holds only a `Dockerfile`, so `docker compose --profile cms up` fails until you scaffold a Strapi app into `cms/` (see the README's "Optional: Strapi CMS"). The Azure IaC, by contrast, always provisions the CMS resources (MySQL, Storage and a CMS container app), whether or not you use them.
+
+**See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decisions 3 and 14, and `docs/CMS_REMOVAL_GUIDE.md`.
 
 ---
 
 ## 13. "Article" as the Example Domain Entity
 
-**Decision:** The accelerator uses `Article` as its example entity, with a rename script (`scripts/rename-entity.sh`) to replace it with the user's domain entity.
+**Decision:** The accelerator uses `Article` as its example entity, with a rename script (`scripts/rename-entity.sh`, or `scripts/rename-entity.ps1` on Windows) to replace it with the user's domain entity.
 
 **Why:** Article is rich enough to demonstrate all operation types — list, detail, create, update, delete, vote, search, filter by category, pagination, related items, tags (many-to-many), and status management — without requiring domain-specific business logic. It maps naturally to a wide range of real-world domains: blog posts, knowledge base articles, product descriptions, documentation.
 
 **Why not a generic name like "Item":** Abstract names produce abstract examples that don't demonstrate real-world patterns. `Article` reads naturally in URLs (`/articles/my-title`), component names (`ArticleCard`), and API paths.
+
+**Trade-off:** A rename is text substitution, not a refactor. The script replaces every occurrence of `Article`/`article` (and the project name) in source, config and docs, then renames matching files and folders. Article-specific behaviour (slugs from titles, voting, featured/trending flags, the seed content) stays and has to be adapted or removed by hand. It also rewrites the existing migrations in place. That is right for a fresh clone, but it means the script must run before any database has been created from those migrations.
 
 **See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decision 1.
 
@@ -156,7 +174,9 @@ Data/           (Repositories, DbContext, Migrations)
 
 **Decision:** The paginated response DTO uses `items` as the field name for the results array on both the backend (`PaginatedResponse<T>.Items`) and frontend (`PaginatedResponse<T>.items`).
 
-**Why:** An entity-specific field name (e.g., `articles`) crosses the API boundary. After running `rename-entity.sh` to rename `Article` to `Product`, a field named `articles` would be inconsistent with the new domain. `items` is entity-agnostic and survives renames untouched on both sides of the API.
+**Why:** An entity-specific field name (e.g., `articles`) crosses the API boundary. After running `rename-entity.sh` to rename `Article` to `Product`, a field named `articles` would be inconsistent with the new domain. `items` is entity-agnostic and survives renames untouched in the wire format and the API types on both sides.
+
+**Trade-off:** The neutrality stops at the API client. `mapPaginatedResponse()` in `lib/api/mappers.ts` re-exposes the list as `articles` for components, so a rename still touches that frontend field (the rename script handles it).
 
 **See also:** `documentation/decisions/TECHNICAL_DECISIONS_LOG.md` Decision 2.
 
