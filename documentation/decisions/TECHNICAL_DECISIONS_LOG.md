@@ -1,12 +1,59 @@
 # Technical Decisions Log — AI Fullstack Accelerator
 
-**Last Updated:** 2026-09-24
+**Last Updated:** 2026-09-29
 **Audience:** Solutions Architects, Senior Developers
 **Purpose:** Append-only log of architectural, security, infrastructure, performance, and technology decisions made during accelerator construction and by teams using it.
 
-> **20 active decisions | 0 archived**
+> **21 active decisions | 0 archived**
 >
 > Add new entries at the **top** (newest first). See [DECISION_TEMPLATE.md](DECISION_TEMPLATE.md) for the entry format and [GOVERNANCE.md](../GOVERNANCE.md) Section 6 for the compaction process.
+
+---
+
+## Decision 21: Override `@puppeteer/browsers` to 3.x under `puppeteer-core`; retire the extract-zip acceptance
+
+**Date:** 2026-09-29
+**Title:** Clear the Lighthouse CI `extract-zip` chain with a parent-scoped override now that CI is on Node 24; keep the `elliptic` acceptance
+**Category:** Security
+**Status:** Active
+
+### Context / Problem
+
+Full `npm audit` showed 12 dev-only findings (6 high, 6 low); the production gate (`npm audit --omit=dev --audit-level=high` in `test.yml` and `frontend-container-deploy.yml`) was already 0.
+
+- **6 high:** `extract-zip` 2.0.1 (GHSA-jmr9-qjv8-65gv, GHSA-7pqw-9j4j-h8q3: symlink path traversal / arbitrary file write on unpack) and its dependents `@puppeteer/browsers` 2.13.0, `puppeteer-core` 24.40.0, `lighthouse` 12.6.1, `@lhci/utils` / `@lhci/cli` 0.15.1. Decision 7 accepted this because the only fixed line, `@puppeteer/browsers` 3.x, needs Node >= 22.12 and CI ran Node 20. `@lhci/cli` 0.15.1 (latest) pins `lighthouse` 12.6.1 exactly, and `puppeteer-core` pins `@puppeteer/browsers` 2.13.0 exactly, so there is no in-range fix and no parent bump.
+- **6 low:** the `elliptic` cluster under `@storybook/nextjs`, accepted in Decision 6.
+
+CI and `engines` now require Node 24, so the Node blocker in Decision 7 no longer holds.
+
+### Decision
+
+- **Add a parent-scoped override** `"puppeteer-core": { "@puppeteer/browsers": "^3.2.3" }`. Only `puppeteer-core` (via `lighthouse`) consumes it. 3.0.0 replaced `extract-zip` with OS `tar`/`unzip` plus `modern-tar`, so `extract-zip` leaves the tree.
+- **Why the major jump is safe here.** The 3.0.0 breaking changes are packaging and runtime only: ESM-only, Node >= 22, `proxy-agent` made an optional peer, `makeProgressCallback` removed, logger signature and extraction changed inside `install()`. `puppeteer-core` 24.40 imports 13 symbols (`launch`, `computeExecutablePath`, `computeSystemExecutablePath`, `createProfile`, `detectBrowserPlatform`, `getInstalledBrowsers`, `resolveBuildId`, `uninstall`, `Browser`, `ChromeReleaseChannel`, `TimeoutError`, `CDP_WEBSOCKET_ENDPOINT_REGEX`, `WEBDRIVER_BIDI_WEBSOCKET_ENDPOINT_REGEX`); all are exported by 3.2.3, and its CJS build loads the ESM-only package through Node 24's `require(esm)`. Lighthouse itself only uses `puppeteer.connect()` to a Chrome started by `chrome-launcher`.
+- **Keep the `elliptic` acceptance (Decision 6).** Still no patched `elliptic`; every `node-polyfill-webpack-plugin` (<= 4.0.0) and `@storybook/nextjs` release is in the affected range. Dev-only, Storybook's webpack browser polyfills; the vulnerable signing code is never called by our stories and never ships.
+
+Result: full `npm audit` **12 -> 6** (0 high, 6 low, all the Decision 6 `elliptic` cluster); production gate stays 0.
+
+### Alternatives Evaluated
+
+| Alternative | Why Rejected |
+|------------|-------------|
+| Keep accepting `extract-zip` (Decision 7) | The blocker (Node 20) is gone; a scoped override removes the package outright |
+| Override `puppeteer-core` -> 25.x under `lighthouse` | Larger surface change (browser protocol, BiDi) against a `lighthouse` pinned to `^24.10`; the smaller override is enough |
+| Global `@puppeteer/browsers` override | Nothing else depends on it today; scoping to the parent keeps any future consumer on its own range |
+| `npm audit fix --force` | Still downgrades `@lhci/cli` to 0.12.0 and `@storybook/nextjs` to 7.0.14 |
+
+### Consequences
+
+- Remove the override when `@lhci/cli` ships on `lighthouse` >= 13 (which uses `puppeteer-core` 25 and `@puppeteer/browsers` 3.x natively).
+- The Dependabot `extract-zip` alerts (#88, #104, dismissed as tolerable risk) should auto-close once the lockfile no longer contains it; no manual reopen needed.
+- The Lighthouse CI job only runs when `AZURE_DEPLOY_ENABLED` is true, so PR CI does not exercise it; it was verified locally (below).
+- Verified locally (Node 24, lockfile regenerated with `npx npm@10 install`): `npx npm@10 ci --dry-run` and `npm ci --dry-run` (npm 11) exit 0; `npm run lint` (0 errors, same 10 warnings as master); `npx tsc --noEmit`; `npm run test:ci` (397 tests; 75 / 78.38 / 70.95 / 75.23 % stmt/branch/fn/line); `npm run build`; `npm run build-storybook`; `require('puppeteer-core')` and ESM import; `lhci healthcheck`; `lhci collect` against `next start` for `/` and `/articles` produced full Lighthouse 12.6.1 reports with no runtime error.
+
+### Files Changed
+
+- `package.json` — `overrides."puppeteer-core"."@puppeteer/browsers"`
+- `package-lock.json` — regenerated under npm 10 (`extract-zip`, `tar-fs`, `bare-*`, `progress`, `pump` and friends removed; `@puppeteer/browsers` 3.2.3, `modern-tar`, `proxy-agent` 8 nested under `puppeteer-core`)
 
 ---
 
@@ -668,6 +715,8 @@ Fold the twelve Dependabot PRs (#12, #49, #53, #54, #56, #57, #58, #62, #63, #64
 Result: production audit gate **0 vulnerabilities**; Dependabot 70 → 3 open (extract-zip ×2 accepted, esbuild ×1 deferred); full `npm audit` 13 (7 low, 6 high), all dev-only.
 
 **Update (2026-09-23):** esbuild deferral resolved — PR #84 bumped `esbuild` to `0.28.2`; lockfile confirmed to resolve only that version tree-wide (no other esbuild version present). The `isomorphic-dompurify ~3.19.0` pin was superseded by Decision 10 (`^3.23.0`) and then PR #75 (`^4.3.0`). The `extract-zip` acceptance remains open (still blocked on `@lhci/cli` shipping on `lighthouse` >=13); see Decision 13 for the current full-audit tally (12: 6 low, 6 high, all dev-only, 0 in production).
+
+**Update (2026-09-29):** the `extract-zip` acceptance is retired by Decision 21. CI moved to Node 24, which removed the Node 20 blocker, and a `puppeteer-core`-scoped override to `@puppeteer/browsers` 3.x takes `extract-zip` out of the tree. Full audit is now 6 (all low, the Decision 6 `elliptic` cluster).
 
 ### Alternatives Evaluated
 

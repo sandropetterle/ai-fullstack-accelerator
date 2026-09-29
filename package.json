@@ -13,6 +13,9 @@
     "@eslint/eslintrc": {
       "ajv": "^6.14.0"
     },
+    "puppeteer-core": {
+      "@puppeteer/browsers": "^3.2.3"
+    },
     "flatted": ">=3.4.0",
     "serialize-javascript": ">=7.0.3",
     "tmp": "^0.2.6",
